@@ -1,10 +1,12 @@
 package tc.oc.pgm.commands.provider;
 
 import app.ashcon.intake.argument.CommandArgs;
+import app.ashcon.intake.argument.Namespace;
 import app.ashcon.intake.bukkit.parametric.provider.BukkitProvider;
 import app.ashcon.intake.parametric.ProvisionException;
 import java.lang.annotation.Annotation;
 import java.util.List;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.bukkit.command.CommandSender;
 import tc.oc.pgm.AllTranslations;
@@ -35,5 +37,19 @@ public class TeamMatchModuleProvider implements BukkitProvider<TeamMatchModule> 
       throw new ProvisionException(AllTranslations.get().translate("command.noTeams", sender));
     }
     return teamMatchModule;
+  }
+
+  @Override
+  public List<String> getSuggestions(
+      String prefix, CommandSender sender, Namespace namespace, List<? extends Annotation> mods) {
+
+    TeamMatchModule teamMatchModule =
+        matchManager.getMatch(sender).getMatchModule(TeamMatchModule.class);
+
+    return teamMatchModule.getTeams().stream()
+        .map(team -> team.getName().replace(' ', '\u2508'))
+        .filter(team -> team.toLowerCase().startsWith(prefix.toLowerCase()))
+        .sorted()
+        .collect(Collectors.toList());
   }
 }

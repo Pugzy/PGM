@@ -124,10 +124,10 @@ public class AdminCommands {
       aliases = {"setnext", "sn"},
       desc =
           "Sets the next map.  Note that the rotation will go to this map then resume as normal.",
-      usage = "[map name]",
+      usage = "<map>",
       flags = "f",
       perms = Permissions.SETNEXT)
-  public static void setNext(CommandSender sender, @Switch('f') boolean force, @Text PGMMap map)
+  public static void setNext(CommandSender sender, PGMMap map, @Switch('f') boolean force)
       throws CommandException {
     MatchManager mm = PGM.getMatchManager();
     boolean restartQueued = RestartManager.get().isRestartRequested();

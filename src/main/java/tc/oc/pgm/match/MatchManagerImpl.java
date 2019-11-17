@@ -117,6 +117,7 @@ public class MatchManagerImpl implements MatchManager {
     world.setPVP(true);
     world.setSpawnFlags(false, false);
     world.setAutoSave(false);
+    world.setGameRuleValue("keepInventory", "false");
 
     if (info.difficulty != null) {
       world.setDifficulty(info.difficulty);

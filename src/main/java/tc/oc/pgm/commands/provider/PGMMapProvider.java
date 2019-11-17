@@ -3,11 +3,13 @@ package tc.oc.pgm.commands.provider;
 import app.ashcon.intake.argument.ArgumentException;
 import app.ashcon.intake.argument.CommandArgs;
 import app.ashcon.intake.argument.MissingArgumentException;
+import app.ashcon.intake.argument.Namespace;
 import app.ashcon.intake.bukkit.parametric.provider.BukkitProvider;
 import app.ashcon.intake.parametric.annotation.Default;
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.bukkit.command.CommandSender;
 import tc.oc.pgm.AllTranslations;
 import tc.oc.pgm.api.match.MatchManager;
@@ -38,7 +40,7 @@ public class PGMMapProvider implements BukkitProvider<PGMMap> {
     PGMMap map = matchManager.getMatch(sender).getMap();
 
     if (args.hasNext()) {
-      String mapName = getRemainingText(args);
+      String mapName = StringUtils.decodeSpaces(getRemainingText(args));
       map = mapLibrary.getMapByNameOrId(mapName).orNull();
       if (map == null) {
         String fuzzyName = StringUtils.bestFuzzyMatch(mapName, mapLibrary.getMapNames(), 0.9);
@@ -81,5 +83,18 @@ public class PGMMapProvider implements BukkitProvider<PGMMap> {
         .findFirst()
         .filter(value -> Arrays.asList(((Default) value).value()).contains("next"))
         .isPresent();
+  }
+
+  @Override
+  public List<String> getSuggestions(
+      String prefix, CommandSender sender, Namespace namespace, List<? extends Annotation> mods) {
+
+    final String convertedPrefix = StringUtils.encodeSpaces(prefix);
+
+    return mapLibrary.getMapNames().stream()
+        .map(StringUtils::encodeSpaces)
+        .filter(name -> name.toLowerCase().startsWith(convertedPrefix.toLowerCase()))
+        .sorted()
+        .collect(Collectors.toList());
   }
 }

@@ -8,6 +8,8 @@ public class StringUtils {
   public static final int GUARANTEED_NO_WRAP_CHAT_PAGE_WIDTH =
       55; // Will never wrap, even with the largest characters
 
+  public static final char FAKE_SPACE_CHAR = '\u2508';
+
   /**
    * Shorthand for listToEnglishCompound(list, "", "").
    *
@@ -455,5 +457,13 @@ public class StringUtils {
     } else {
       return percent + "%";
     }
+  }
+
+  public static String encodeSpaces(String input) {
+    return input.replace(' ', FAKE_SPACE_CHAR);
+  }
+
+  public static String decodeSpaces(String input) {
+    return input.replace(FAKE_SPACE_CHAR, ' ');
   }
 }
