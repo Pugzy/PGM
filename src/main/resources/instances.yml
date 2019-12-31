@@ -1,0 +1,22 @@
+#
+# Instances sample configuration
+#
+servers:
+  Alpha:
+    private: false
+    rotation: default
+    max: 64
+    dynamic: true
+  Beta:
+    private: false
+    rotation: default
+    max: 64
+    dynamic: true
+  Pugzy:
+    private: true
+    rotation: event
+    max: 16
+  Electroid:
+    private: true
+    rotation: development
+    max: 32

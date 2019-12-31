@@ -23,6 +23,7 @@ import tc.oc.pgm.api.chat.MultiAudience;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchManager;
 import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.instance.InstanceManager;
 import tc.oc.pgm.map.*;
 import tc.oc.pgm.module.ModuleLoadException;
 import tc.oc.pgm.rotation.PGMMapOrder;
@@ -43,6 +44,7 @@ public class MatchManagerImpl implements MatchManager, MultiAudience {
   private final AtomicInteger count;
 
   private PGMMapOrder pgmMapOrder;
+  private InstanceManager instanceManager;
 
   public MatchManagerImpl(Server server, MapLibrary library, MapLoader loader)
       throws MapNotFoundException {
@@ -259,6 +261,11 @@ public class MatchManagerImpl implements MatchManager, MultiAudience {
   @Override
   public PGMMapOrder getMapOrder() {
     return pgmMapOrder;
+  }
+
+  @Override
+  public void setInstanceManager(InstanceManager instanceManager) {
+    this.instanceManager = instanceManager;
   }
 
   /**

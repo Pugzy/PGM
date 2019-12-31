@@ -48,6 +48,16 @@ public class Config {
     }
   }
 
+  public static class Instances {
+    public static boolean areEnabled() {
+      return getConfiguration().getBoolean("instances.enabled");
+    }
+
+    public static String getPath() {
+      return getConfiguration().getString("instances.path");
+    }
+  }
+
   public static class AutoRestart {
     private final Configuration config;
 

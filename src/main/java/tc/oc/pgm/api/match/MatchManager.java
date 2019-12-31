@@ -11,6 +11,7 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Entity;
 import tc.oc.pgm.api.chat.Audience;
 import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.instance.InstanceManager;
 import tc.oc.pgm.map.MapNotFoundException;
 import tc.oc.pgm.map.PGMMap;
 import tc.oc.pgm.rotation.PGMMapOrder;
@@ -107,4 +108,6 @@ public interface MatchManager extends MatchPlayerResolver, Audience {
   void setMapOrder(PGMMapOrder pgmMapOrder);
 
   PGMMapOrder getMapOrder();
+
+  void setInstanceManager(InstanceManager instanceManager);
 }

@@ -3,6 +3,8 @@ package tc.oc.pgm.listeners;
 import app.ashcon.intake.Command;
 import app.ashcon.intake.argument.ArgumentException;
 import app.ashcon.intake.parametric.annotation.Text;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.UUID;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
@@ -45,7 +47,7 @@ public class ChatDispatcher implements Listener {
       desc = "Send a message to everyone",
       usage = "[message]")
   public void sendGlobal(Match match, MatchPlayer sender, @Nullable @Text String message) {
-    send(match, sender, message, "<{0}>: {1}", viewer -> true, SettingValue.GLOBAL);
+    send(match.getPlayers(), sender, message, "<{0}>: {1}", viewer -> true, SettingValue.GLOBAL);
   }
 
   @Command(
@@ -62,7 +64,7 @@ public class ChatDispatcher implements Listener {
     }
 
     send(
-        match,
+        match.getPlayers(),
         sender,
         message,
         party.getChatPrefix().toLegacyText() + "{0}: {1}",
@@ -78,7 +80,7 @@ public class ChatDispatcher implements Listener {
       desc = "Send a message to operators",
       usage = "[message]",
       perms = Permissions.ADMINCHAT)
-  public void sendAdmin(Match match, MatchPlayer sender, @Nullable @Text String message) {
+  public void sendAdmin(MatchPlayer sender, @Nullable @Text String message) {
     // If a player managed to send a default message without permissions, reset their chat channel
     if (sender != null && !sender.getBukkit().hasPermission(Permissions.ADMINCHAT)) {
       sender.getSettings().resetValue(SettingKey.CHAT);
@@ -89,7 +91,7 @@ public class ChatDispatcher implements Listener {
     }
 
     send(
-        match,
+        manager.getPlayers(),
         sender,
         message,
         "[" + ChatColor.GOLD + "A" + ChatColor.WHITE + "] {0}: {1}",
@@ -106,8 +108,12 @@ public class ChatDispatcher implements Listener {
       lastMessagedBy.put(receiver, sender.getId());
     }
 
+    Collection<MatchPlayer> players = new ArrayList<>(2);
+    players.add(sender);
+    players.add(manager.getPlayer(receiver));
+
     send(
-        match,
+        players,
         sender,
         message,
         "[" + ChatColor.GOLD + "DM" + ChatColor.WHITE + "] {0}: {1}",
@@ -115,8 +121,8 @@ public class ChatDispatcher implements Listener {
         null);
 
     send(
-        match,
-        manager.getPlayer(receiver), // Allow for cross-match messages
+        players,
+        sender, // Allow for cross-match messages
         message,
         "[" + ChatColor.GOLD + "DM" + ChatColor.WHITE + "] -> {0}: {1}",
         viewer -> viewer.getBukkit().equals(sender.getBukkit()),
@@ -173,7 +179,7 @@ public class ChatDispatcher implements Listener {
         sendTeam(match, sender, message);
         return;
       case ADMIN:
-        sendAdmin(match, sender, message);
+        sendAdmin(sender, message);
         return;
       default:
         sendGlobal(match, sender, message);
@@ -181,7 +187,7 @@ public class ChatDispatcher implements Listener {
   }
 
   public void send(
-      Match match,
+      Collection<MatchPlayer> players,
       MatchPlayer sender,
       @Nullable String message,
       String format,
@@ -205,7 +211,7 @@ public class ChatDispatcher implements Listener {
                     ? new PersonalizedText("Console", ChatColor.AQUA, ChatColor.ITALIC)
                     : sender.getStyledName(NameStyle.FANCY),
                 new PersonalizedText(message.trim())));
-    match.getPlayers().stream().filter(filter).forEach(player -> player.sendMessage(component));
+    players.stream().filter(filter).forEach(player -> player.sendMessage(component));
     Audience.get(Bukkit.getConsoleSender()).sendMessage(component);
   }
 }

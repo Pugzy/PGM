@@ -1,6 +1,7 @@
 package tc.oc.pgm.commands;
 
 import app.ashcon.intake.Command;
+import app.ashcon.intake.parametric.annotation.Default;
 import com.google.common.base.Joiner;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
@@ -8,17 +9,31 @@ import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.HoverEvent;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
+import tc.oc.component.Component;
+import tc.oc.component.types.PersonalizedText;
+import tc.oc.component.types.PersonalizedTranslatable;
 import tc.oc.pgm.AllTranslations;
+import tc.oc.pgm.api.PGM;
+import tc.oc.pgm.api.chat.Audience;
 import tc.oc.pgm.api.match.Match;
+import tc.oc.pgm.api.match.MatchManager;
 import tc.oc.pgm.api.match.MatchPhase;
+import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.commands.annotations.Text;
 import tc.oc.pgm.ffa.FreeForAllMatchModule;
 import tc.oc.pgm.goals.Goal;
 import tc.oc.pgm.goals.GoalMatchModule;
+import tc.oc.pgm.instance.InstanceManager;
+import tc.oc.pgm.map.PGMMap;
 import tc.oc.pgm.score.ScoreMatchModule;
 import tc.oc.pgm.teams.Team;
 import tc.oc.pgm.teams.TeamMatchModule;
+import tc.oc.pgm.util.ComponentPaginatedResult;
 import tc.oc.util.StringUtils;
 import tc.oc.util.components.PeriodFormats;
 import tc.oc.util.localization.Locales;
@@ -140,5 +155,126 @@ public class MatchCommands {
         }
       }
     }
+  }
+
+  @Command(
+      aliases = {"loadnewmatch"},
+      desc = "Loads a new match")
+  public static void loadNewMatch(
+      MatchPlayer player, MatchManager matchManager, Match match, @Default("next") @Text PGMMap map)
+      throws Throwable {
+    map.reload(true);
+
+    Match newMatch = matchManager.createMatch(null, map);
+
+    teleportMatchPlayer(player, player.getMatch(), newMatch);
+  }
+
+  @Command(
+      aliases = {"unloadmatch"},
+      desc = "Unloads a specified match")
+  public static void unloadMatch(
+      MatchPlayer player, MatchManager matchManager, Match match, String matchID) throws Throwable {
+    matchManager.unloadMatch(matchID);
+  }
+
+  @Command(
+      aliases = {"matches"},
+      desc = "Lists all matches")
+  public static void matches(
+      Audience audience,
+      CommandSender sender,
+      Match match,
+      MatchManager matchManager,
+      @Default("1") int page)
+      throws Throwable {
+
+    Collection<Match> matches = matchManager.getMatches();
+    int resultsPerPage = 8;
+    int pages = (matches.size() + resultsPerPage - 1) / resultsPerPage;
+
+    String listHeader =
+        net.md_5.bungee.api.ChatColor.BLUE.toString()
+            + net.md_5.bungee.api.ChatColor.STRIKETHROUGH
+            + "-----------"
+            + net.md_5.bungee.api.ChatColor.RESET
+            + " "
+            + "Loaded Matches"
+            + net.md_5.bungee.api.ChatColor.DARK_AQUA
+            + " ("
+            + net.md_5.bungee.api.ChatColor.AQUA
+            + page
+            + net.md_5.bungee.api.ChatColor.DARK_AQUA
+            + " of "
+            + net.md_5.bungee.api.ChatColor.AQUA
+            + pages
+            + net.md_5.bungee.api.ChatColor.DARK_AQUA
+            + ") "
+            + net.md_5.bungee.api.ChatColor.translateAlternateColorCodes('&', "&9&m-----------");
+
+    new ComponentPaginatedResult<Match>(listHeader, resultsPerPage) {
+      @Override
+      public Component format(Match match, int index) {
+
+        PGMMap map = match.getMap();
+
+        String arrow =
+            match.getPhase().equals(MatchPhase.RUNNING)
+                ? net.md_5.bungee.api.ChatColor.GREEN + "» "
+                : "» ";
+
+        Component rendered = new PersonalizedText("Match #" + match.getId());
+        rendered.color(net.md_5.bungee.api.ChatColor.GRAY);
+        BaseComponent dupe = rendered.duplicate();
+
+        rendered.clickEvent(
+            new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tpmatch " + match.getId()));
+        rendered.hoverEvent(
+            HoverEvent.Action.SHOW_TEXT,
+            new PersonalizedTranslatable("tip.teleportTo", dupe).render());
+
+        return new PersonalizedText(
+            new PersonalizedText(
+                arrow
+                    + net.md_5.bungee.api.ChatColor.GOLD
+                    + map.getName()
+                    + net.md_5.bungee.api.ChatColor.DARK_AQUA
+                    + " ("),
+            rendered,
+            new PersonalizedText(
+                net.md_5.bungee.api.ChatColor.AQUA
+                    + " Players: "
+                    + net.md_5.bungee.api.ChatColor.WHITE
+                    + match.getPlayers().size()
+                    + net.md_5.bungee.api.ChatColor.DARK_AQUA
+                    + ")"));
+      }
+    }.display(audience, matches, page);
+  }
+
+  @Command(
+      aliases = {"tpmatch"},
+      desc = "Teleports to specified match number")
+  public static void tpMatch(MatchPlayer player, Match match, String matchID) throws Throwable {
+    Collection<Match> matches = PGM.get().getMatchManager().getMatches();
+
+    for (Match runningMatch : matches) {
+      if (runningMatch.getId().equals(matchID)) {
+        teleportMatchPlayer(player, player.getMatch(), runningMatch);
+        break;
+      }
+    }
+  }
+
+  @Command(
+      aliases = {"managerreload"},
+      desc = "Teleports to specified match number")
+  public static void managerReload(MatchPlayer player, Match match) {
+    InstanceManager.get().loadInstances();
+  }
+
+  private static void teleportMatchPlayer(MatchPlayer matchPlayer, Match oldMatch, Match newMatch) {
+    oldMatch.removePlayer(matchPlayer.getBukkit());
+    newMatch.addPlayer(matchPlayer.getBukkit());
   }
 }

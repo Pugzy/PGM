@@ -84,6 +84,7 @@ import tc.oc.pgm.flag.FlagModule;
 import tc.oc.pgm.gamerules.GameRulesModule;
 import tc.oc.pgm.goals.GoalModule;
 import tc.oc.pgm.hunger.HungerModule;
+import tc.oc.pgm.instance.InstanceManager;
 import tc.oc.pgm.inventory.ViewInventoryMatchModule;
 import tc.oc.pgm.itemmeta.ItemModifyModule;
 import tc.oc.pgm.join.JoinMatchModule;
@@ -282,6 +283,9 @@ public final class PGMImpl extends JavaPlugin implements PGM {
 
     try {
       matchManager = new MatchManagerImpl(server, mapLibrary, mapLoader);
+
+      matchManager.setInstanceManager(
+          new InstanceManager(logger, new File(getDataFolder(), Config.Instances.getPath())));
 
       if (Config.Rotations.areEnabled()) {
         matchManager.setMapOrder(
