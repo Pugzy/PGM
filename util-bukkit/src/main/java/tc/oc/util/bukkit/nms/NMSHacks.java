@@ -11,6 +11,7 @@ import net.md_5.bungee.chat.ComponentSerializer;
 import net.minecraft.server.v1_8_R3.*;
 import net.minecraft.server.v1_8_R3.Item;
 import net.minecraft.server.v1_8_R3.WorldBorder;
+import net.minecraft.server.v1_8_R3.WorldType;
 import org.bukkit.*;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -59,6 +60,28 @@ public interface NMSHacks {
       CraftPlayer cplayer = (CraftPlayer) player;
       packet.a(cplayer.getHandle().playerConnection);
     }
+  }
+
+  static void forceSkinChange(Player player) {
+    PacketPlayOutRespawn respawnPacket =
+        new PacketPlayOutRespawn(
+            player.getWorld().getEnvironment().getId(),
+            EnumDifficulty.NORMAL,
+            WorldType.FLAT,
+            WorldSettings.EnumGamemode.getById(player.getGameMode().getValue()));
+    sendPacket(player, respawnPacket);
+
+    Location location = player.getLocation().clone();
+    Set<PacketPlayOutPosition.EnumPlayerTeleportFlags> set = new HashSet<>();
+    PacketPlayOutPosition packetPlayOutPosition =
+        new PacketPlayOutPosition(
+            location.getX(),
+            location.getY(),
+            location.getZ(),
+            location.getYaw(),
+            location.getPitch(),
+            set);
+    sendPacket(player, packetPlayOutPosition);
   }
 
   static void setFireworksExpectedLifespan(Firework firework, int ticks) {

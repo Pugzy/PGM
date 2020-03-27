@@ -23,6 +23,7 @@ import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.events.PlayerJoinMatchEvent;
 import tc.oc.pgm.events.PlayerPartyChangeEvent;
+import tc.oc.pgm.events.PlayerSkinChangeEvent;
 import tc.oc.pgm.ffa.Tribute;
 import tc.oc.pgm.spawns.events.ParticipantSpawnEvent;
 import tc.oc.pgm.teams.Team;
@@ -208,5 +209,10 @@ public class MatchTabManager extends TabManager implements Listener {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onSpawn(ParticipantSpawnEvent event) {
     invalidate(event.getPlayer());
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onSkinChange(PlayerSkinChangeEvent event) {
+    this.getPlayerEntry(event.getPlayer()).refresh();
   }
 }

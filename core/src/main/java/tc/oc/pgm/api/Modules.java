@@ -82,6 +82,7 @@ import tc.oc.pgm.modules.PlayableRegionMatchModule;
 import tc.oc.pgm.modules.PlayableRegionModule;
 import tc.oc.pgm.modules.SoundsMatchModule;
 import tc.oc.pgm.modules.StatsMatchModule;
+import tc.oc.pgm.modules.SteveSkinsMatchModule;
 import tc.oc.pgm.modules.TimeLockModule;
 import tc.oc.pgm.modules.ToolRepairMatchModule;
 import tc.oc.pgm.modules.ToolRepairModule;
@@ -159,6 +160,7 @@ public interface Modules {
     register(ObserverToolsMatchModule.class, new ObserverToolsMatchModule.Factory());
     register(FireworkMatchModule.class, FireworkMatchModule::new);
     register(StatsMatchModule.class, StatsMatchModule::new);
+    register(SteveSkinsMatchModule.class, SteveSkinsMatchModule::new);
 
     // MatchModules that require other dependencies
     register(GoalMatchModule.class, new GoalMatchModule.Factory());

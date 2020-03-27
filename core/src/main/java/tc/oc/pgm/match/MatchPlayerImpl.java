@@ -16,6 +16,7 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.bukkit.GameMode;
+import org.bukkit.Skin;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -36,6 +37,7 @@ import tc.oc.pgm.api.setting.SettingValue;
 import tc.oc.pgm.api.setting.Settings;
 import tc.oc.pgm.api.time.Tick;
 import tc.oc.pgm.events.PlayerResetEvent;
+import tc.oc.pgm.events.PlayerSkinChangeEvent;
 import tc.oc.pgm.kits.Kit;
 import tc.oc.pgm.kits.WalkSpeedKit;
 import tc.oc.util.ClassLogger;
@@ -376,6 +378,13 @@ public class MatchPlayerImpl implements MatchPlayer, PlayerAudience, Comparable<
   @Override
   public GameMode getGameMode() {
     return getBukkit().getGameMode();
+  }
+
+  @Override
+  public void setSkin(Skin skin) {
+    this.getBukkit().setSkin(skin);
+    getMatch().callEvent(new PlayerSkinChangeEvent(this, skin));
+    NMSHacks.forceSkinChange(this.getBukkit());
   }
 
   @Override
