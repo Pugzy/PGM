@@ -6,10 +6,14 @@ import com.google.common.collect.Iterables;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.ItemMeta;
 import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.kits.tag.ItemTags;
+import tc.oc.pgm.util.bukkit.BukkitUtils;
 import tc.oc.pgm.util.item.Items;
 
 public class ItemKit implements KitDefinition {
@@ -51,6 +55,31 @@ public class ItemKit implements KitDefinition {
 
     final HumanEntity holder = player.getBukkit();
     final PlayerInventory inv = player.getBukkit().getInventory();
+
+    for (Entry<Slot, ItemStack> kitEntry : event.getSlotItems().entrySet()) {
+
+      ItemStack item = kitEntry.getValue().clone();
+
+      if (ItemTags.TEAM_COLOR.has(item)) {
+        ItemMeta itemMeta = item.getItemMeta();
+
+        boolean colorable =
+            (item.getType() == Material.WOOL
+                || item.getType() == Material.STAINED_CLAY
+                || item.getType() == Material.STAINED_GLASS
+                || item.getType() == Material.STAINED_GLASS_PANE
+                || item.getType() == Material.CARPET);
+
+        if (colorable) {
+          byte color = BukkitUtils.chatColorToDyeColor(player.getParty().getColor()).getWoolData();
+          item.setDurability(color);
+        }
+
+        item.setItemMeta(itemMeta);
+
+        kitEntry.getKey().putItem(holder, item);
+      }
+    }
 
     if (force) {
       for (Entry<Slot, ItemStack> kitEntry : event.getSlotItems().entrySet()) {

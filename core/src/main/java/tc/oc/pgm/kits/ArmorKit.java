@@ -2,9 +2,14 @@ package tc.oc.pgm.kits;
 
 import java.util.List;
 import java.util.Map;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.kits.tag.ItemTags;
+import tc.oc.pgm.util.bukkit.BukkitUtils;
 
 public class ArmorKit extends AbstractKit {
   public static class ArmorItem {
@@ -37,7 +42,23 @@ public class ArmorKit extends AbstractKit {
     for (Map.Entry<ArmorType, ArmorItem> entry : this.armor.entrySet()) {
       int slot = entry.getKey().ordinal();
       if (force || wearing[slot] == null || wearing[slot].getType() == Material.AIR) {
-        wearing[slot] = entry.getValue().stack.clone();
+
+        ItemStack item = entry.getValue().stack.clone();
+
+        if (ItemTags.TEAM_COLOR.has(item)) {
+          ItemMeta itemMeta = item.getItemMeta();
+
+          if (itemMeta instanceof LeatherArmorMeta) {
+            LeatherArmorMeta leather = (LeatherArmorMeta) itemMeta;
+            Color primary =
+                BukkitUtils.chatColorToDyeColor(player.getParty().getColor()).getColor();
+            leather.setColor(primary);
+          }
+
+          item.setItemMeta(itemMeta);
+        }
+
+        wearing[slot] = item;
 
         KitMatchModule kitMatchModule = player.getMatch().getModule(KitMatchModule.class);
         if (kitMatchModule != null) {

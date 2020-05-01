@@ -513,6 +513,10 @@ public abstract class KitParser {
       ItemTags.PREVENT_SHARING.set(itemStack, true);
     }
 
+    if (XMLUtils.parseBoolean(el.getAttribute("team-color"), false)) {
+      ItemTags.TEAM_COLOR.set(itemStack, true);
+    }
+
     Node projectileNode = Node.fromAttr(el, "projectile");
     if (projectileNode != null) {
       ItemTags.PROJECTILE.set(
