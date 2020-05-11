@@ -1,7 +1,11 @@
 package tc.oc.pgm.wool;
 
 import java.util.Collections;
+import java.util.Set;
+import java.util.UUID;
 import javax.annotation.Nullable;
+
+import com.google.common.collect.Sets;
 import org.bukkit.ChatColor;
 import org.bukkit.DyeColor;
 import org.bukkit.Location;
@@ -13,10 +17,13 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.inventory.ItemStack;
 import tc.oc.pgm.api.event.PlayerItemTransferEvent;
 import tc.oc.pgm.api.match.Match;
+import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.api.party.Competitor;
 import tc.oc.pgm.api.party.Party;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
+import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
+import tc.oc.pgm.events.PlayerLeaveMatchEvent;
 import tc.oc.pgm.goals.Goal;
 import tc.oc.pgm.goals.ProximityMetric;
 import tc.oc.pgm.goals.TouchableGoal;
@@ -39,12 +46,14 @@ public class MonumentWool extends TouchableGoal<MonumentWoolFactory>
   protected boolean placed = false;
   private final Location woolLocation;
   private final Location monumentLocation;
+  private final WoolCarrier woolCarriers;
 
   public MonumentWool(MonumentWoolFactory definition, Match match) {
     super(definition, match);
     this.woolLocation = definition.getLocation().toLocation(match.getWorld());
     this.monumentLocation =
         definition.getPlacementRegion().getBounds().getCenterPoint().toLocation(match.getWorld());
+    this.woolCarriers = new WoolCarrier(this);
   }
 
   @Override
@@ -101,37 +110,55 @@ public class MonumentWool extends TouchableGoal<MonumentWoolFactory>
             && this.getDefinition().isObjectiveWool(newState.getData()));
   }
 
-  public void handleWoolAcquisition(Player player, ItemStack item) {
+  public void handleWool(boolean acquisition, Player player, ItemStack item) {
     if (!this.isPlaced() && this.getDefinition().isObjectiveWool(item)) {
       ParticipantState participant = this.getMatch().getParticipantState(player);
       if (participant != null && this.canComplete(participant.getParty())) {
-        touch(participant);
-
-        // Initialize monument proximity
-        ProximityMetric metric = getProximityMetric(participant.getParty());
-        if (metric != null) {
-          switch (metric.type) {
-            case CLOSEST_BLOCK:
-              updateProximity(participant, this.woolLocation);
-              break;
-            case CLOSEST_PLAYER:
-              updateProximity(participant, player.getLocation());
-              break;
-          }
+        if (acquisition) {
+          handleWoolAcquisition(participant);
+          this.woolCarriers.add(player);
+        } else {
+          this.woolCarriers.remove(player);
         }
+      }
+    }
+  }
+
+  public void handleWoolAcquisition(ParticipantState participant) {
+    touch(participant);
+
+    // Initialize monument proximity
+    ProximityMetric metric = getProximityMetric(participant.getParty());
+    if (metric != null) {
+      switch (metric.type) {
+        case CLOSEST_BLOCK:
+          updateProximity(participant, this.woolLocation);
+          break;
+        case CLOSEST_PLAYER:
+          updateProximity(participant, participant.getLocation());
+          break;
+      }
+    }
+  }
+
+  public void handleWoolRelinquishing(Player player, ItemStack item) {
+    if (!this.isPlaced() && this.getDefinition().isObjectiveWool(item)) {
+      ParticipantState participant = this.getMatch().getParticipantState(player);
+      if (participant != null && this.canComplete(participant.getParty())) {
+        this.woolCarriers.remove(player);
       }
     }
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onItemTransfer(PlayerItemTransferEvent event) {
-    if (event.isAcquiring()) handleWoolAcquisition(event.getPlayer(), event.getItemStack());
+    handleWool(event.isAcquiring(), event.getPlayer(), event.getItemStack());
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onItemKitApplication(ApplyItemKitEvent event) {
     for (ItemStack item : event.getItems()) {
-      handleWoolAcquisition(event.getPlayer().getBukkit(), item);
+      handleWool(true, event.getPlayer().getBukkit(), item);
     }
   }
 
@@ -139,9 +166,24 @@ public class MonumentWool extends TouchableGoal<MonumentWoolFactory>
   public void onArmorKitApplication(ApplyKitEvent event) {
     if (event.getKit() instanceof ArmorKit) {
       for (ArmorKit.ArmorItem armorPiece : ((ArmorKit) event.getKit()).getArmor().values()) {
-        handleWoolAcquisition(event.getPlayer().getBukkit(), armorPiece.stack);
+        handleWool(true, event.getPlayer().getBukkit(), armorPiece.stack);
       }
     }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onPlayerDeath(MatchPlayerDeathEvent event) {
+    woolCarriers.remove(event.getPlayer().getBukkit());
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onPlayerDeath(PlayerLeaveMatchEvent event) {
+    woolCarriers.remove(event.getPlayer().getBukkit());
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onPlayerDeath(MatchStartEvent event) {
+    woolCarriers.start();
   }
 
   public DyeColor getDyeColor() {
