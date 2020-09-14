@@ -255,6 +255,11 @@ public abstract class FilterParser {
     return new VoidFilter();
   }
 
+  @MethodParser("original")
+  public OriginalFilter parseOriginal(Element el) throws InvalidXMLException {
+    return new OriginalFilter(parseChild(el));
+  }
+
   @MethodParser("entity")
   public EntityTypeFilter parseEntity(Element el) throws InvalidXMLException {
     return new EntityTypeFilter(XMLUtils.parseEnum(el, EntityType.class, "entity type"));
