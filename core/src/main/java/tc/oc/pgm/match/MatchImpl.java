@@ -315,6 +315,17 @@ public class MatchImpl implements Match {
     }
   }
 
+  @Override
+  public Match getMatch() {
+    return this;
+  }
+
+  @Nullable
+  @Override
+  public Event getEvent() {
+    return null;
+  }
+
   private class EventExecutor implements org.bukkit.plugin.EventExecutor {
     private final RegisteredListener listener;
 

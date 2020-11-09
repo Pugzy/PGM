@@ -2,22 +2,30 @@ package tc.oc.pgm.api.match;
 
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
+import tc.oc.pgm.api.feature.Feature;
+import tc.oc.pgm.api.filter.query.MatchQuery;
 import tc.oc.pgm.api.map.MapInfo;
+import tc.oc.pgm.api.map.MapModule;
+import tc.oc.pgm.api.map.factory.MapModuleFactory;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.match.event.MatchPhaseChangeEvent;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.api.match.event.MatchUnloadEvent;
+import tc.oc.pgm.api.module.Module;
 import tc.oc.pgm.api.module.ModuleContext;
+import tc.oc.pgm.api.module.ModuleFactory;
 import tc.oc.pgm.api.module.exception.ModuleLoadException;
 import tc.oc.pgm.api.party.Competitor;
 import tc.oc.pgm.api.party.Party;
@@ -27,6 +35,7 @@ import tc.oc.pgm.api.player.MatchPlayerResolver;
 import tc.oc.pgm.api.time.Tick;
 import tc.oc.pgm.countdowns.CountdownContext;
 import tc.oc.pgm.features.MatchFeatureContext;
+import tc.oc.pgm.filters.Filterable;
 import tc.oc.pgm.filters.query.Query;
 import tc.oc.pgm.util.chat.MultiAudience;
 
@@ -38,7 +47,7 @@ import tc.oc.pgm.util.chat.MultiAudience;
  * {@link Match}. This should allow multiple {@link Match}es to run concurrently on the same {@link
  * org.bukkit.Server}, as long as resources are cleaned up after {@link #unload()}.
  */
-public interface Match extends MatchPlayerResolver, MultiAudience, ModuleContext<MatchModule> {
+public interface Match extends Filterable<MatchQuery>, MatchPlayerResolver, MultiAudience, ModuleContext<MatchModule> {
 
   /**
    * Get the global {@link Logger} for the {@link Match}.
@@ -270,6 +279,36 @@ public interface Match extends MatchPlayerResolver, MultiAudience, ModuleContext
    * @param players The new maximum number of players.
    */
   void setMaxPlayers(int players);
+
+//  @Override
+//  default <T extends MapModule<?>> T feature(MapModuleFactory<T> factory) {
+//    return getMod().get(factory);
+//  }
+
+  @Override
+  default Optional<? extends Filterable<? super MatchQuery>> filterableParent() {
+    return Optional.empty();
+  }
+
+  @Override
+  default Stream<? extends Filterable<? extends MatchQuery>> filterableChildren() {
+    return getParties().stream();
+  }
+
+  @Override
+  default <R extends Filterable<?>> Stream<? extends R> filterableDescendants(Class<R> type) {
+    Stream<R> result = Stream.of();
+    if(type.isAssignableFrom(Match.class)) {
+      result = Stream.concat(result, Stream.of((R) this));
+    }
+    if(Party.class.isAssignableFrom(type)) {
+      result = Stream.concat(result, (Stream<R>) getParties().stream().filter(type::isInstance));
+    }
+    if(type.isAssignableFrom(MatchPlayer.class)) {
+      result = Stream.concat(result, (Stream<? extends R>) getPlayers());
+    }
+    return result;
+  }
 
   /**
    * Get all the {@link MatchPlayer}s in the {@link Match}.

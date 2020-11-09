@@ -5,12 +5,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import net.kyori.text.Component;
 import org.apache.commons.lang3.builder.CompareToBuilder;
@@ -24,6 +26,7 @@ import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -44,6 +47,7 @@ import tc.oc.pgm.api.setting.SettingValue;
 import tc.oc.pgm.api.setting.Settings;
 import tc.oc.pgm.api.time.Tick;
 import tc.oc.pgm.events.PlayerResetEvent;
+import tc.oc.pgm.filters.Filterable;
 import tc.oc.pgm.kits.Kit;
 import tc.oc.pgm.kits.WalkSpeedKit;
 import tc.oc.pgm.util.ClassLogger;
@@ -476,4 +480,5 @@ public class MatchPlayerImpl implements MatchPlayer, PlayerAudience, Comparable<
         .append("match", getMatch().getId())
         .build();
   }
+
 }

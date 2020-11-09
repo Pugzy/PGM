@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.Set;
 import java.util.logging.Logger;
 import net.kyori.text.Component;
@@ -80,8 +81,14 @@ public class PortalModule implements MapModule {
             regionParser.parseRegionProperty(
                 portalEl, RandomPointsValidation.INSTANCE, "destination");
 
-        Filter filter =
+        Filter participantFilter =
             factory.getFilters().parseFilterProperty(portalEl, "filter", StaticFilter.ALLOW);
+
+        Filter observerFilter =
+                factory.getFilters().parseFilterProperty(portalEl, "observers", StaticFilter.ALLOW);
+
+        Filter trigger =
+                factory.getFilters().parseFilterProperty(portalEl, "forward", StaticFilter.ALLOW);
 
         boolean sound = XMLUtils.parseBoolean(portalEl.getAttribute("sound"), true);
         boolean protect = XMLUtils.parseBoolean(portalEl.getAttribute("protect"), false);
@@ -100,7 +107,9 @@ public class PortalModule implements MapModule {
                   dYaw,
                   dPitch,
                   destinationRegion,
-                  filter,
+                  trigger,
+                  participantFilter,
+                  observerFilter,
                   sound,
                   protect,
                   bidirectional,

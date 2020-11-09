@@ -22,7 +22,7 @@ public class FilterModule implements MapModule {
   @Override
   public MatchModule createMatchModule(Match match) {
     if (match.getMap().getProto().isOlderThan(MapProtos.FILTER_FEATURES)) {
-      return null;
+      return new FilterMatchModule(match);
     } else {
       return new FilterMatchModule(match);
     }

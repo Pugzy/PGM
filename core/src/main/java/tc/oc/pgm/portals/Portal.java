@@ -9,16 +9,20 @@ import org.bukkit.util.Vector;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.feature.FeatureDefinition;
 import tc.oc.pgm.api.filter.Filter;
+import tc.oc.pgm.api.filter.query.PlayerQuery;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchScope;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.region.Region;
+import tc.oc.pgm.filters.FilterMatchModule;
 import tc.oc.pgm.util.chat.Sound;
 
 public class Portal implements FeatureDefinition {
   protected final Region region;
   protected final @Nullable Region destinationRegion;
-  protected final Filter filter;
+  protected final Filter trigger;
+  protected final Filter participantFilter;
+  protected final Filter observerFilter;
   protected final boolean sound;
   protected final boolean protect;
   protected final boolean bidirectional;
@@ -46,7 +50,9 @@ public class Portal implements FeatureDefinition {
       DoubleProvider dYaw,
       DoubleProvider dPitch,
       @Nullable Region destinationRegion,
-      Filter filter,
+      Filter trigger,
+      Filter participantFilter,
+      Filter observerFilter,
       boolean sound,
       boolean protect,
       boolean bidirectional,
@@ -54,7 +60,9 @@ public class Portal implements FeatureDefinition {
 
     this.region = region;
     this.destinationRegion = destinationRegion;
-    this.filter = filter;
+    this.trigger = trigger;
+    this.participantFilter = participantFilter;
+    this.observerFilter = observerFilter;
     this.sound = sound;
     this.protect = protect;
     this.bidirectional = bidirectional;
@@ -93,6 +101,15 @@ public class Portal implements FeatureDefinition {
     }
   }
 
+  public void load(FilterMatchModule fmm) {
+    fmm.onRise(PlayerQuery.class, trigger, player -> {
+      MatchPlayer matchPlayer = (MatchPlayer) player;
+      if(canUse(matchPlayer)) {
+        teleportPlayer(matchPlayer, transform(matchPlayer.getBukkit().getLocation()));
+      };
+    });
+  }
+
   public Region getRegion() {
     return this.region;
   }
@@ -101,16 +118,12 @@ public class Portal implements FeatureDefinition {
     return destinationRegion;
   }
 
-  public Filter getFilter() {
-    return this.filter;
-  }
-
   public boolean isProtected() {
     return protect;
   }
 
   protected boolean canUse(MatchPlayer player) {
-    return player.getParty().isObserving() || this.filter.query(player.getQuery()).isAllowed();
+    return (player.isParticipating() ? participantFilter : observerFilter).query(player.getQuery()).isAllowed();
   }
 
   protected Location cloneWith(Location original, Vector position, float yaw, float pitch) {
