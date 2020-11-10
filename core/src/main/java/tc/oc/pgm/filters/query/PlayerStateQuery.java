@@ -75,12 +75,14 @@ public class PlayerStateQuery extends Query implements PlayerQuery {
   }
 
   @Override
-  public Optional<? extends Filterable<? super tc.oc.pgm.filters.query.PlayerQuery>> filterableParent() {
+  public Optional<? extends Filterable<? super tc.oc.pgm.filters.query.PlayerQuery>>
+      filterableParent() {
     return Optional.of(getParty());
   }
 
   @Override
-  public Stream<? extends Filterable<? extends tc.oc.pgm.filters.query.PlayerQuery>> filterableChildren() {
+  public Stream<? extends Filterable<? extends tc.oc.pgm.filters.query.PlayerQuery>>
+      filterableChildren() {
     return Stream.of();
   }
 }

@@ -9,5 +9,5 @@ import tc.oc.pgm.api.filter.Filter;
  */
 @FunctionalInterface
 public interface FilterListener<F extends Filterable<?>> {
-    void filterQueryChanged(F filterable, boolean response);
+  void filterQueryChanged(F filterable, boolean response);
 }

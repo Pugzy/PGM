@@ -1,10 +1,9 @@
 package tc.oc.pgm.filters;
 
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.SetMultimap;
-import java.time.Duration;
+import com.google.common.collect.Sets;
+import com.google.common.collect.Table;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,12 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.logging.Level;
-
-import com.google.common.collect.Sets;
-import com.google.common.collect.Table;
 import org.bukkit.event.EventException;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -25,7 +20,6 @@ import org.bukkit.event.Listener;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.event.CoarsePlayerMoveEvent;
 import tc.oc.pgm.api.filter.Filter;
-import tc.oc.pgm.api.filter.query.MatchQuery;
 import tc.oc.pgm.api.filter.query.PlayerQuery;
 import tc.oc.pgm.api.filter.query.Query;
 import tc.oc.pgm.api.match.Match;
@@ -43,7 +37,6 @@ import tc.oc.pgm.events.PlayerPartyChangeEvent;
 import tc.oc.pgm.flag.event.FlagStateChangeEvent;
 import tc.oc.pgm.goals.events.GoalCompleteEvent;
 import tc.oc.pgm.util.MapUtils;
-import tc.oc.pgm.util.TimeUtils;
 
 @ListenerScope(MatchScope.LOADED)
 public class FilterMatchModule implements MatchModule, Listener, FilterDispatcher, Tickable {
@@ -62,7 +55,8 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
     final Set<tc.oc.pgm.filters.FilterListener<?>> fall = new HashSet<>();
   }
 
-  private final Table<Filter, Class<? extends Filterable>, ListenerSet> listeners = HashBasedTable.create();
+  private final Table<Filter, Class<? extends Filterable>, ListenerSet> listeners =
+      HashBasedTable.create();
 
   // Most recent responses for each filter with listeners (used to detect changes)
   private final Table<Filter, Filterable<?>, Boolean> lastResponses = HashBasedTable.create();
@@ -70,41 +64,65 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
   // Filterables that need a check in the next tick (cleared every tick)
   private final Set<Filterable<?>> dirtySet = new HashSet<>();
 
-  private <F extends Filterable<?>> void register(Class<F> scope, Filter filter, boolean response, tc.oc.pgm.filters.FilterListener<? super F> listener) {
-    if(match.isLoaded()) {
+  private <F extends Filterable<?>> void register(
+      Class<F> scope,
+      Filter filter,
+      boolean response,
+      tc.oc.pgm.filters.FilterListener<? super F> listener) {
+    if (match.isLoaded()) {
       throw new IllegalStateException("Cannot register filter listener after match is loaded");
     }
 
-    final ListenerSet listenerSet = listeners.row(filter)
-            .computeIfAbsent(scope, s -> new ListenerSet());
+    final ListenerSet listenerSet =
+        listeners.row(filter).computeIfAbsent(scope, s -> new ListenerSet());
 
-    (response ? listenerSet.rise
-            : listenerSet.fall).add(listener);
+    (response ? listenerSet.rise : listenerSet.fall).add(listener);
 
-    match.filterableDescendants(scope)
-            .forEach(filterable -> {
+    match
+        .filterableDescendants(scope)
+        .forEach(
+            filterable -> {
               final boolean last = lastResponse(filter, filterable);
-              if(last == response) {
+              if (last == response) {
                 dispatch(listener, filter, filterable, last);
               }
             });
   }
 
   @Override
-  public <F extends Filterable<?>> void onChange(Class<F> scope, Filter filter, tc.oc.pgm.filters.FilterListener<? super F> listener) {
-    match.getLogger().fine("onChange scope=" + scope.getSimpleName() + " listener=" + listener + " filter=" + filter);
+  public <F extends Filterable<?>> void onChange(
+      Class<F> scope, Filter filter, tc.oc.pgm.filters.FilterListener<? super F> listener) {
+    match
+        .getLogger()
+        .fine(
+            "onChange scope="
+                + scope.getSimpleName()
+                + " listener="
+                + listener
+                + " filter="
+                + filter);
     register(scope, filter, true, listener);
     register(scope, filter, false, listener);
   }
 
   @Override
-  public void onChange(Filter filter, tc.oc.pgm.filters.FilterListener<? super Filterable<?>> listener) {
+  public void onChange(
+      Filter filter, tc.oc.pgm.filters.FilterListener<? super Filterable<?>> listener) {
     onChange((Class) Filterable.class, filter, listener);
   }
 
   @Override
-  public <F extends Filterable<?>> void onRise(Class<F> scope, Filter filter, Consumer<? super F> listener) {
-    match.getLogger().fine("onRise scope=" + scope.getSimpleName() + " listener=" + listener + " filter=" + filter);
+  public <F extends Filterable<?>> void onRise(
+      Class<F> scope, Filter filter, Consumer<? super F> listener) {
+    match
+        .getLogger()
+        .fine(
+            "onRise scope="
+                + scope.getSimpleName()
+                + " listener="
+                + listener
+                + " filter="
+                + filter);
     register(scope, filter, true, (filterable, response) -> listener.accept(filterable));
   }
 
@@ -114,8 +132,17 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
   }
 
   @Override
-  public <F extends Filterable<?>> void onFall(Class<F> scope, Filter filter, Consumer<? super F> listener) {
-    match.getLogger().fine("onFall scope=" + scope.getSimpleName() + " listener=" + listener + " filter=" + filter);
+  public <F extends Filterable<?>> void onFall(
+      Class<F> scope, Filter filter, Consumer<? super F> listener) {
+    match
+        .getLogger()
+        .fine(
+            "onFall scope="
+                + scope.getSimpleName()
+                + " listener="
+                + listener
+                + " filter="
+                + filter);
     register(scope, filter, false, (filterable, response) -> listener.accept(filterable));
   }
 
@@ -128,49 +155,70 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
     return MapUtils.computeIfAbsent(lastResponses.row(filter), filterable, filter::response);
   }
 
-  private <F extends Filterable<?>> void dispatch(FilterListener<? super F> listener, Filter filter, F filterable, boolean response) {
-    if(match.getLogger().isLoggable(Level.FINER)) {
-      match.getLogger().finer("Dispatching response=" + response +
-              " listener=" + listener +
-              " filter=" + filter +
-              " filterable=" + filterable);
+  private <F extends Filterable<?>> void dispatch(
+      FilterListener<? super F> listener, Filter filter, F filterable, boolean response) {
+    if (match.getLogger().isLoggable(Level.FINER)) {
+      match
+          .getLogger()
+          .finer(
+              "Dispatching response="
+                  + response
+                  + " listener="
+                  + listener
+                  + " filter="
+                  + filter
+                  + " filterable="
+                  + filterable);
     }
     listener.filterQueryChanged(filterable, response);
   }
 
-  private <F extends Filterable<?>, Q extends Query> void check(F filterable, Q query, List<Runnable> dispatches) {
+  private <F extends Filterable<?>, Q extends Query> void check(
+      F filterable, Q query, List<Runnable> dispatches) {
     final Map<Filter, Boolean> beforeCache = new HashMap<>();
     final Map<Filter, Boolean> afterCache = lastResponses.column(filterable);
 
     // For each scope that the given filterable applies to
-    listeners.columnMap().forEach((scope, column) -> {
-      if(scope.isInstance(filterable)) {
-        // For each filter in this scope
-        column.forEach((filter, filterListeners) -> {
-          final Boolean before;
-          final boolean after;
-          if(beforeCache.containsKey(filter)) {
-            // If the filter has already been checked, we have both responses saved.
-            before = beforeCache.get(filter);
-            after = afterCache.get(filter);
-          } else {
-            // The first time a particular filter is checked, move the old response to
-            // a local temporary cache and save the new response to the permanent cache.
-            before = afterCache.get(filter);
-            beforeCache.put(filter, before);
-            after = filter.response(query);
-            afterCache.put(filter, after);
-          }
+    listeners
+        .columnMap()
+        .forEach(
+            (scope, column) -> {
+              if (scope.isInstance(filterable)) {
+                // For each filter in this scope
+                column.forEach(
+                    (filter, filterListeners) -> {
+                      final Boolean before;
+                      final boolean after;
+                      if (beforeCache.containsKey(filter)) {
+                        // If the filter has already been checked, we have both responses saved.
+                        before = beforeCache.get(filter);
+                        after = afterCache.get(filter);
+                      } else {
+                        // The first time a particular filter is checked, move the old response to
+                        // a local temporary cache and save the new response to the permanent cache.
+                        before = afterCache.get(filter);
+                        beforeCache.put(filter, before);
+                        after = filter.response(query);
+                        afterCache.put(filter, after);
+                      }
 
-          if(before == null || before != after) {
-            dispatches.add(() -> {
-              (after ? filterListeners.rise
-                      : filterListeners.fall).forEach(listener -> dispatch((tc.oc.pgm.filters.FilterListener<? super F>) listener, filter, filterable, after));
+                      if (before == null || before != after) {
+                        dispatches.add(
+                            () -> {
+                              (after ? filterListeners.rise : filterListeners.fall)
+                                  .forEach(
+                                      listener ->
+                                          dispatch(
+                                              (tc.oc.pgm.filters.FilterListener<? super F>)
+                                                  listener,
+                                              filter,
+                                              filterable,
+                                              after));
+                            });
+                      }
+                    });
+              }
             });
-          }
-        });
-      }
-    });
   }
 
   private <F extends Filterable<?>, Q extends Query> void check(F filterable, Q query) {
@@ -188,10 +236,10 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
 
   public void tick() {
     final Set<Filterable<?>> checked = new HashSet<>();
-    for(;;) {
+    for (; ; ) {
       // Collect Filterables that are dirty, and have not already been checked in this tick
       final Set<Filterable<?>> checking = ImmutableSet.copyOf(Sets.difference(dirtySet, checked));
-      if(checking.isEmpty()) break;
+      if (checking.isEmpty()) break;
 
       // Remove what we are about to check from the dirty set, and add them to the checked set
       dirtySet.removeAll(checking);
@@ -216,14 +264,12 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
   }
 
   public void invalidate(Filterable<?> filterable) {
-    if(dirtySet.add(filterable)) {
+    if (dirtySet.add(filterable)) {
       filterable.filterableChildren().forEach(this::invalidate);
     }
   }
 
-  /**
-   * TODO: optimize using the filter parameter
-   */
+  /** TODO: optimize using the filter parameter */
   public void invalidate(Filter filter, Filterable<?> filterable) {
     invalidate(filterable);
   }
@@ -256,25 +302,35 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPartyChange(PlayerPartyChangeEvent event) throws EventException {
-    if(event.getNewParty() != null) {
+    if (event.getNewParty() != null) {
       invalidate(event.getPlayer());
     } else {
       // Before a player leaves, force all filters false that are not already false.
       // So, all dynamic player filters are effectively wrapped in "___ and online",
       // and listeners don't need to do any cleanup as long as they don't hold on to
       // players that don't match the filter.
-      listeners.columnMap().forEach((scope, column) -> {
-        if(scope.isInstance(event.getPlayer())) {
-          // For each filter in this scope
-          column.forEach((filter, filterListeners) -> {
-            // If player joined very recently, they may not have a cached response yet
-            final Boolean response = lastResponses.get(filter, event.getPlayer());
-            if(response != null && response) {
-              filterListeners.fall.forEach(listener -> dispatch((FilterListener<? super PlayerQuery>) listener, filter, event.getPlayer().getQuery(), false));
-            }
-          });
-        }
-      });
+      listeners
+          .columnMap()
+          .forEach(
+              (scope, column) -> {
+                if (scope.isInstance(event.getPlayer())) {
+                  // For each filter in this scope
+                  column.forEach(
+                      (filter, filterListeners) -> {
+                        // If player joined very recently, they may not have a cached response yet
+                        final Boolean response = lastResponses.get(filter, event.getPlayer());
+                        if (response != null && response) {
+                          filterListeners.fall.forEach(
+                              listener ->
+                                  dispatch(
+                                      (FilterListener<? super PlayerQuery>) listener,
+                                      filter,
+                                      event.getPlayer().getQuery(),
+                                      false));
+                        }
+                      });
+                }
+              });
 
       event.yield();
 
@@ -305,8 +361,8 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
   }
 
   // TODO: memes
-//  @EventHandler(priority = EventPriority.MONITOR)
-//  public void onRankingsChange(RankingsChangeEvent event) {
-//    invalidate(match);
-//  }
+  //  @EventHandler(priority = EventPriority.MONITOR)
+  //  public void onRankingsChange(RankingsChangeEvent event) {
+  //    invalidate(match);
+  //  }
 }

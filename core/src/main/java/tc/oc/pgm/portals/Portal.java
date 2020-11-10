@@ -102,12 +102,16 @@ public class Portal implements FeatureDefinition {
   }
 
   public void load(FilterMatchModule fmm) {
-    fmm.onRise(PlayerQuery.class, trigger, player -> {
-      MatchPlayer matchPlayer = (MatchPlayer) player;
-      if(canUse(matchPlayer)) {
-        teleportPlayer(matchPlayer, transform(matchPlayer.getBukkit().getLocation()));
-      };
-    });
+    fmm.onRise(
+        PlayerQuery.class,
+        trigger,
+        playerQuery -> {
+          MatchPlayer matchPlayer = playerQuery.getPlayer();
+          if (matchPlayer != null && canUse(matchPlayer)) {
+            teleportPlayer(matchPlayer, transform(matchPlayer.getBukkit().getLocation()));
+          }
+          ;
+        });
   }
 
   public Region getRegion() {
@@ -123,7 +127,9 @@ public class Portal implements FeatureDefinition {
   }
 
   protected boolean canUse(MatchPlayer player) {
-    return (player.isParticipating() ? participantFilter : observerFilter).query(player.getQuery()).isAllowed();
+    return (player.isParticipating() ? participantFilter : observerFilter)
+        .query(player.getQuery())
+        .isAllowed();
   }
 
   protected Location cloneWith(Location original, Vector position, float yaw, float pitch) {

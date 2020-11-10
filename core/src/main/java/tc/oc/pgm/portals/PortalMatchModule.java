@@ -1,9 +1,6 @@
 package tc.oc.pgm.portals;
 
-import java.util.Collection;
 import java.util.Set;
-
-import com.google.common.collect.ImmutableList;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -16,7 +13,6 @@ import tc.oc.pgm.api.module.exception.ModuleLoadException;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.events.ListenerScope;
 import tc.oc.pgm.filters.FilterMatchModule;
-import tc.oc.pgm.goals.GoalMatchModule;
 
 @ListenerScope(MatchScope.LOADED)
 public class PortalMatchModule implements MatchModule, Listener {
@@ -32,15 +28,9 @@ public class PortalMatchModule implements MatchModule, Listener {
   @Override
   public void load() throws ModuleLoadException {
 
-    Collection<MatchModule> modules = match.getModules();
-    int size = modules.size();
-    System.out.println("modules loaded: " + size);
-
     FilterMatchModule fmm = match.needModule(FilterMatchModule.class);
 
-    portals.forEach(portal -> {
-      portal.load(fmm);
-    });
+    portals.forEach(portal -> portal.load(fmm));
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

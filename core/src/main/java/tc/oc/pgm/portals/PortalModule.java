@@ -4,9 +4,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import java.util.Collection;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 import net.kyori.text.Component;
 import net.kyori.text.TranslatableComponent;
 import org.bukkit.util.Vector;
@@ -85,10 +86,13 @@ public class PortalModule implements MapModule {
             factory.getFilters().parseFilterProperty(portalEl, "filter", StaticFilter.ALLOW);
 
         Filter observerFilter =
-                factory.getFilters().parseFilterProperty(portalEl, "observers", StaticFilter.ALLOW);
+            factory.getFilters().parseFilterProperty(portalEl, "observers", StaticFilter.ALLOW);
+
+        Filter forward = factory.getFilters().parseFilterProperty(portalEl, "forward");
 
         Filter trigger =
-                factory.getFilters().parseFilterProperty(portalEl, "forward", StaticFilter.ALLOW);
+            Stream.of(region, forward).filter(Objects::nonNull).findFirst().orElse(null);
+        // TODO: Throw error here if trigger = null
 
         boolean sound = XMLUtils.parseBoolean(portalEl.getAttribute("sound"), true);
         boolean protect = XMLUtils.parseBoolean(portalEl.getAttribute("protect"), false);
