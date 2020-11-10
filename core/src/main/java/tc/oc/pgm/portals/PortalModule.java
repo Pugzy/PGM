@@ -22,6 +22,7 @@ import tc.oc.pgm.api.map.factory.MapModuleFactory;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchModule;
 import tc.oc.pgm.api.region.Region;
+import tc.oc.pgm.filters.FilterMatchModule;
 import tc.oc.pgm.filters.FilterModule;
 import tc.oc.pgm.filters.StaticFilter;
 import tc.oc.pgm.regions.CuboidRegion;
@@ -36,7 +37,9 @@ import tc.oc.pgm.regions.Union;
 import tc.oc.pgm.util.xml.InvalidXMLException;
 import tc.oc.pgm.util.xml.XMLUtils;
 
-public class PortalModule implements MapModule {
+import javax.annotation.Nullable;
+
+public class PortalModule implements MapModule<PortalMatchModule> {
   private static final Component PROTECT_MESSAGE = TranslatableComponent.of("map.protectPortal");
 
   protected final Set<Portal> portals;
@@ -45,8 +48,14 @@ public class PortalModule implements MapModule {
     this.portals = ImmutableSet.copyOf(portals);
   }
 
+  @Nullable
   @Override
-  public MatchModule createMatchModule(Match match) {
+  public Collection<Class<? extends MatchModule>> getHardDependencies() {
+    return ImmutableList.of(FilterMatchModule.class);
+  }
+
+  @Override
+  public PortalMatchModule createMatchModule(Match match) {
     return new PortalMatchModule(match, this.portals);
   }
 
