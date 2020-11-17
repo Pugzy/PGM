@@ -306,24 +306,24 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
       invalidate(event.getPlayer());
     } else {
       // Before a player leaves, force all filters false that are not already false.
-      // So, all dynamic player filters are effectively wrapped in "___ and online",
-      // and listeners don't need to do any cleanup as long as they don't hold on to
+      // So, all dynamic player filters are effectively wrapped in "___ and online".
+      // Listeners don't need to do any cleanup as long as they don't hold on to
       // players that don't match the filter.
       listeners
           .columnMap()
           .forEach(
               (scope, column) -> {
-                if (scope.isInstance(event.getPlayer())) {
+                if (scope.isInstance(event.getPlayer().getQuery())) {
                   // For each filter in this scope
                   column.forEach(
                       (filter, filterListeners) -> {
                         // If player joined very recently, they may not have a cached response yet
-                        final Boolean response = lastResponses.get(filter, event.getPlayer());
+                        final Boolean response = lastResponses.get(filter, event.getPlayer().getQuery());
                         if (response != null && response) {
                           filterListeners.fall.forEach(
                               listener ->
                                   dispatch(
-                                      (FilterListener<? super PlayerQuery>) listener,
+                                          (FilterListener<? super PlayerQuery>) listener,
                                       filter,
                                       event.getPlayer().getQuery(),
                                       false));
@@ -335,8 +335,8 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
       event.yield();
 
       // Wait until after the event to remove them, in case they get invalidated during the event.
-      dirtySet.remove(event.getPlayer());
-      lastResponses.columnKeySet().remove(event.getPlayer());
+      dirtySet.remove(event.getPlayer().getQuery());
+      lastResponses.columnKeySet().remove(event.getPlayer().getQuery());
     }
   }
 
