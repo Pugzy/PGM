@@ -13,6 +13,8 @@ import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.filters.FilterMatchModule;
 import tc.oc.pgm.util.chat.Sound;
 
+import java.util.ArrayList;
+
 public class Portal implements FeatureDefinition {
 
   protected final PortalTransform transform;
@@ -44,7 +46,7 @@ public class Portal implements FeatureDefinition {
         trigger,
         playerQuery -> {
           MatchPlayer matchPlayer = playerQuery.getPlayer();
-          if (matchPlayer != null && canUse(matchPlayer)) {
+          if (matchPlayer != null && canUse(matchPlayer) && PortalMatchModule.teleported(matchPlayer)) {
             teleportPlayer(matchPlayer, matchPlayer.getBukkit().getLocation());
           }
           ;
@@ -58,7 +60,20 @@ public class Portal implements FeatureDefinition {
   }
 
   protected void teleportPlayer(final MatchPlayer player, final Location from) {
+
+
+
+    System.out.println(this);
+    System.out.println(from);
+    System.out.println(transform);
+
     final Location to = transform.apply(from);
+
+    System.out.println(to);
+
+      System.out.println("--------------------------------");
+
+
     final Player bukkit = player.getBukkit();
     final Match match = player.getMatch();
 

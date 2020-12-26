@@ -25,4 +25,11 @@ public class RelativeDoubleProvider implements DoubleProvider {
       return new RelativeDoubleProvider(-this.delta);
     }
   }
+
+  @Override
+  public String toString() {
+    return "RelativeDoubleProvider{" +
+            "delta=" + delta +
+            '}';
+  }
 }

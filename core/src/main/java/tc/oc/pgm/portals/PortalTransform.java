@@ -80,6 +80,17 @@ public interface PortalTransform extends InvertibleOperator<PortalTransform> {
                     yaw.inverse(),
                     pitch.inverse());
         }
+
+        @Override
+        public String toString() {
+            return "Piecewise{" +
+                    "x=" + x +
+                    ", y=" + y +
+                    ", z=" + z +
+                    ", yaw=" + yaw +
+                    ", pitch=" + pitch +
+                    '}';
+        }
     }
 
     Identity IDENTITY = new Identity();
@@ -173,7 +184,6 @@ public interface PortalTransform extends InvertibleOperator<PortalTransform> {
             return last.apply(first.apply(v));
         }
 
-
         @Override
         public Location apply(Location v) {
             return last.apply(first.apply(v));
@@ -187,6 +197,14 @@ public interface PortalTransform extends InvertibleOperator<PortalTransform> {
         @Override
         public PortalTransform inverse() {
             return new Concatenate(last, first);
+        }
+
+        @Override
+        public String toString() {
+            return "Concatenate{" +
+                    "first=" + first +
+                    ", last=" + last +
+                    '}';
         }
     }
 }

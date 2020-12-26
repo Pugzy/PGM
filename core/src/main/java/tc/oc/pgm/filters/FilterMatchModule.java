@@ -17,6 +17,7 @@ import org.bukkit.event.EventException;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.event.CoarsePlayerMoveEvent;
 import tc.oc.pgm.api.filter.Filter;
@@ -276,6 +277,10 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerMove(CoarsePlayerMoveEvent event) {
+    if (event.getCause() instanceof PlayerTeleportEvent) {
+      return;
+    }
+
     // On movement events, check the player immediately instead of invalidating them.
     // We can't wait until the end of the tick because the player could move several
     // more times by then (i.e. if we received multiple packets from them in the same

@@ -21,4 +21,11 @@ public class StaticDoubleProvider implements DoubleProvider {
   public DoubleProvider inverse() {
     return null;
   }
+
+  @Override
+  public String toString() {
+    return "StaticDoubleProvider{" +
+            "value=" + value +
+            '}';
+  }
 }
