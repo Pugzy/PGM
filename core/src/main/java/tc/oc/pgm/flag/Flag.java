@@ -7,6 +7,7 @@ import static net.kyori.adventure.text.Component.translatable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
@@ -284,43 +285,26 @@ public class Flag extends TouchableGoal<FlagDefinition> implements Listener {
     } else if (predeterminedPost != null) {
       returnPost = predeterminedPost;
       predeterminedPost = null;
-    } else if (definition.isSequential()) {
-      sequentialPostCounter %= posts.size();
-      int i = 0;
-      while (posts
-              .get((sequentialPostCounter + i) % posts.size())
-              .getRespawnFilter()
-              .query(query)
-              .isDenied()
-          && i < posts.size()) {
-        i++;
-      }
-      if (i >= posts.size()) {
-        returnPost = definition.getDefaultPost();
-      } else {
-        returnPost = posts.get((i + sequentialPostCounter++) % posts.size());
-        sequentialPostCounter = sequentialPostCounter + i;
-      }
     } else {
-      ArrayList<Post> randomPosts = new ArrayList<Post>(posts);
-      Collections.shuffle(randomPosts);
-      int i = 0;
-      while (randomPosts
-              .get((sequentialPostCounter + i) % randomPosts.size())
-              .getRespawnFilter()
-              .query(query)
-              .isDenied()
-          && i < randomPosts.size()) {
-        i++;
-      }
-      if (i >= randomPosts.size()) {
-        returnPost = definition.getDefaultPost();
+      ArrayList<Post> possiblePosts = new ArrayList<>(posts);
+      if (definition.isSequential()) {
+        Collections.rotate(possiblePosts, -sequentialPostCounter);
       } else {
-        returnPost = randomPosts.get((i + sequentialPostCounter++) % randomPosts.size());
+        Collections.shuffle(possiblePosts);
       }
+      sequentialPostCounter++;
+      returnPost = getNextPost(possiblePosts);
     }
+
     previousPost = returnPost;
     return returnPost;
+  }
+
+  private Post getNextPost(Collection<Post> posts) {
+    return posts.stream()
+        .filter(post -> post.getRespawnFilter().query(query).isAllowed())
+        .findFirst()
+        .orElse(definition.getDefaultPost());
   }
 
   public Location getReturnPoint(Post post) {
