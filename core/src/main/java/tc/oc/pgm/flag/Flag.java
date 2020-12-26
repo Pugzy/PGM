@@ -6,11 +6,11 @@ import static net.kyori.adventure.text.Component.translatable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
-import java.util.ArrayList;
-import java.util.Collections;
 import javax.annotation.Nullable;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
