@@ -32,21 +32,4 @@ public class PortalMatchModule implements MatchModule, Listener {
 
     portals.forEach(portal -> portal.load(fmm));
   }
-
-  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void checkPortalEntry(CoarsePlayerMoveEvent event) {
-    if (event.getCause() instanceof PlayerTeleportEvent) {
-      return;
-    }
-
-    MatchPlayer player = this.match.getPlayer(event.getPlayer());
-    if (player == null) return;
-
-    for (Portal portal : this.portals) {
-      if (portal.teleportEligiblePlayer(
-          player, event.getBlockFrom().toVector(), event.getBlockTo().toVector(), event.getTo())) {
-        break;
-      }
-    }
-  }
 }
