@@ -299,6 +299,7 @@ public class Flag extends TouchableGoal<FlagDefinition> implements Listener {
         returnPost = definition.getDefaultPost();
       } else {
         returnPost = posts.get((i + sequentialPostCounter++) % posts.size());
+        sequentialPostCounter = sequentialPostCounter + i;
       }
     } else {
       ArrayList<Post> randomPosts = new ArrayList<Post>(posts);
