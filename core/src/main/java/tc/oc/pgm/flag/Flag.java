@@ -4,11 +4,9 @@ import static net.kyori.adventure.key.Key.key;
 import static net.kyori.adventure.sound.Sound.sound;
 import static net.kyori.adventure.text.Component.translatable;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import java.util.Iterator;
-import java.util.Optional;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import javax.annotation.Nullable;
 import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
@@ -41,6 +39,7 @@ import tc.oc.pgm.api.party.Party;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.region.Region;
+import tc.oc.pgm.filters.query.FlagQuery;
 import tc.oc.pgm.flag.event.FlagCaptureEvent;
 import tc.oc.pgm.flag.event.FlagStateChangeEvent;
 import tc.oc.pgm.flag.state.BaseState;
@@ -99,11 +98,17 @@ public class Flag extends TouchableGoal<FlagDefinition> implements Listener {
   private BaseState state;
   private boolean transitioning;
   private @Nullable Post predeterminedPost;
+  private Post previousPost;
+  private final FlagQuery query;
 
   protected Flag(Match match, FlagDefinition definition, ImmutableSet<Net> nets)
       throws ModuleLoadException {
     super(definition, match);
     this.nets = nets;
+
+    this.query = new FlagQuery(this);
+
+    this.previousPost = definition.getDefaultPost();
 
     TeamMatchModule tmm = match.getModule(TeamMatchModule.class);
 
@@ -174,6 +179,10 @@ public class Flag extends TouchableGoal<FlagDefinition> implements Listener {
     if (block == null) return null;
     BlockState state = block.getState();
     return state instanceof Banner ? (Banner) state : null;
+  }
+
+  public FlagQuery getQuery() {
+    return this.query;
   }
 
   @Override
@@ -264,25 +273,58 @@ public class Flag extends TouchableGoal<FlagDefinition> implements Listener {
   private int sequentialPostCounter = 1;
 
   public Post getReturnPost(Post post) {
+    ImmutableList<Post> posts = definition.getPosts();
+    Post returnPost;
     if (post.isSpecifiedPost()) {
-      return post;
-    }
-    if (predeterminedPost != null) {
-      Post returnPost = predeterminedPost;
+      returnPost = post;
+    } else if (predeterminedPost != null) {
+      returnPost = predeterminedPost;
       predeterminedPost = null;
-      return returnPost;
+    } else if (definition.isSequential()) {
+      sequentialPostCounter %= posts.size();
+      int i = 0;
+      while (posts
+              .get((sequentialPostCounter + i) % posts.size())
+              .getRespawnFilter()
+              .query(query)
+              .isDenied()
+          && i < posts.size()) {
+        i++;
+      }
+      if (i >= posts.size()) {
+        returnPost = definition.getDefaultPost();
+      } else {
+        returnPost = posts.get((i + sequentialPostCounter++) % posts.size());
+      }
+    } else {
+      ArrayList<Post> randomPosts = new ArrayList<Post>(posts);
+      Collections.shuffle(randomPosts);
+      int i = 0;
+      while (randomPosts
+              .get((sequentialPostCounter + i) % randomPosts.size())
+              .getRespawnFilter()
+              .query(query)
+              .isDenied()
+          && i < randomPosts.size()) {
+        i++;
+      }
+      if (i >= randomPosts.size()) {
+        returnPost = definition.getDefaultPost();
+      } else {
+        returnPost = randomPosts.get((i + sequentialPostCounter++) % randomPosts.size());
+      }
     }
-    if (definition.isSequential()) {
-      sequentialPostCounter %= definition.getPosts().size();
-      return definition.getPosts().get(sequentialPostCounter++);
-    }
-    Random random = match.getRandom();
-    return definition.getPosts().get(random.nextInt(definition.getPosts().size()));
+    previousPost = returnPost;
+    return returnPost;
   }
 
   public Location getReturnPoint(Post post) {
     Post returnPost = getReturnPost(post);
     return returnPost.getReturnPoint(this, this.bannerYawProvider).clone();
+  }
+
+  public Post getPreviousPost() {
+    return previousPost;
   }
 
   public String predeterminePost(Post post) {
