@@ -277,9 +277,9 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerMove(CoarsePlayerMoveEvent event) {
-    if (event.getCause() instanceof PlayerTeleportEvent) {
-      return;
-    }
+//    if (event.getCause() instanceof PlayerTeleportEvent) {
+//      return;
+//    }
 
     // On movement events, check the player immediately instead of invalidating them.
     // We can't wait until the end of the tick because the player could move several

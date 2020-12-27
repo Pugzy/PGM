@@ -137,8 +137,7 @@ public interface PortalTransform extends InvertibleOperator<PortalTransform> {
         @Override
         public Vector apply(Vector v) {
             v = new Vector(v.getX(), v.getY(), v.getZ());
-            v.copy(to.getRandom(random));
-            return v;
+            return v.copy(to.getRandom(random));
         }
 
         @Override
@@ -158,6 +157,14 @@ public interface PortalTransform extends InvertibleOperator<PortalTransform> {
         public PortalTransform inverse() {
             from.orElseThrow(() -> new IllegalStateException("not invertible"));
             return new Regional(Optional.of(to), from.get());
+        }
+
+        @Override
+        public String toString() {
+            return "Regional{" +
+                    "from=" + from +
+                    ", to=" + to +
+                    '}';
         }
     }
 
@@ -196,7 +203,7 @@ public interface PortalTransform extends InvertibleOperator<PortalTransform> {
 
         @Override
         public PortalTransform inverse() {
-            return new Concatenate(last, first);
+            return new Concatenate(last.inverse(), first.inverse());
         }
 
         @Override

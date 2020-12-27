@@ -127,12 +127,20 @@ public class PortalModule implements MapModule<PortalMatchModule> {
         Filter forwardFinal =
                 Stream.of(forward, transit, entrance).filter(Objects::nonNull).findFirst().orElse(null);
 
+        // Figure out the (optional) reverse trigger, from dynamic filters or exit region
         Filter inverseTransit = transit != null ? new InverseFilter(transit) : null;
 
-        // Figure out the (optional) reverse trigger, from dynamic filters or exit region
         final Optional<Filter> reverseFinal = Stream.of(reverse, inverseTransit, exit)
                 .filter(Objects::nonNull).findFirst();
 
+        // Portal is always bidirectional if a reverse dynamic filter is specified,
+        // otherwise it must be enabled explicitly.
+        final boolean bidirectional = reverse != null || transit != null || XMLUtils.parseBoolean(portalEl.getAttribute("bidirectional"), false);
+        if(bidirectional && !transform.invertible()) {
+          throw new InvalidXMLException("Bidirectional portal must have an invertible transform", portalEl);
+        }
+
+        // Passive filters
         Filter participantFilter =
                 factory.getFilters().parseFilterProperty(portalEl, "filter", StaticFilter.ALLOW);
 
@@ -144,11 +152,6 @@ public class PortalModule implements MapModule<PortalMatchModule> {
 
         boolean protect = XMLUtils.parseBoolean(portalEl.getAttribute("protect"), false);
 
-        Portal portal = new Portal(forwardFinal, transform, participantFilter, observerFilter, sound, smooth);
-
-        portals.add(portal);
-        factory.getFeatures().addFeature(portalEl, portal);
-
         // Protect the entrance/exit
         if (protect) {
           protectRegion(rfaContext, entrance);
@@ -157,7 +160,11 @@ public class PortalModule implements MapModule<PortalMatchModule> {
           }
         }
 
-        if (XMLUtils.parseBoolean(portalEl.getAttribute("bidirectional"), false)) {
+        Portal portal = new Portal(forwardFinal, transform, participantFilter, observerFilter, sound, smooth);
+        portals.add(portal);
+        factory.getFeatures().addFeature(portalEl, portal);
+
+        if (bidirectional) {
           Portal inversePortal = new Portal(reverseFinal.orElse(null), transform.inverse(), participantFilter, observerFilter, sound, smooth);
           portals.add(inversePortal);
           factory.getFeatures().addFeature(portalEl, inversePortal);
