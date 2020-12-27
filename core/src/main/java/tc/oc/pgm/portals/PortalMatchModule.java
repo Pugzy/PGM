@@ -1,6 +1,7 @@
 package tc.oc.pgm.portals;
 
-import org.bukkit.entity.Player;
+import java.util.HashSet;
+import java.util.Set;
 import org.bukkit.event.Listener;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchModule;
@@ -12,21 +13,17 @@ import tc.oc.pgm.api.time.Tick;
 import tc.oc.pgm.events.ListenerScope;
 import tc.oc.pgm.filters.FilterMatchModule;
 
-import java.util.ArrayList;
-import java.util.Set;
-
 @ListenerScope(MatchScope.LOADED)
 public class PortalMatchModule implements MatchModule, Listener, Tickable {
 
   private final Match match;
   protected final Set<Portal> portals;
 
-  final static ArrayList<MatchPlayer> teleportedPlayers = new ArrayList<>();
+  static final Set<MatchPlayer> teleportedPlayers = new HashSet<>();
 
   public PortalMatchModule(Match match, Set<Portal> portals) {
     this.match = match;
     this.portals = portals;
-    match.addTickable(this, MatchScope.LOADED);
   }
 
   @Override
@@ -37,12 +34,7 @@ public class PortalMatchModule implements MatchModule, Listener, Tickable {
   }
 
   public static boolean teleported(MatchPlayer player) {
-    if (teleportedPlayers.contains(player)) {
-        return false;
-    } else {
-      teleportedPlayers.add(player);
-      return true;
-    }
+    return !teleportedPlayers.add(player);
   }
 
   @Override

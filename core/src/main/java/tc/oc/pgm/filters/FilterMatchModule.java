@@ -17,7 +17,6 @@ import org.bukkit.event.EventException;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerTeleportEvent;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.event.CoarsePlayerMoveEvent;
 import tc.oc.pgm.api.filter.Filter;
@@ -48,8 +47,6 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
   public FilterMatchModule(Match match) {
     this.match = match;
   }
-
-  // New Filter Class below
 
   private static class ListenerSet {
     final Set<tc.oc.pgm.filters.FilterListener<?>> rise = new HashSet<>();
@@ -277,10 +274,6 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerMove(CoarsePlayerMoveEvent event) {
-//    if (event.getCause() instanceof PlayerTeleportEvent) {
-//      return;
-//    }
-
     // On movement events, check the player immediately instead of invalidating them.
     // We can't wait until the end of the tick because the player could move several
     // more times by then (i.e. if we received multiple packets from them in the same
@@ -289,9 +282,7 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
 
     if (player != null) {
       invalidate(player);
-      // TODO: lol
-      PGM.get().getExecutor().execute(this::tick);
-      // match.getServer().postToMainThread(PGM.get(), true, this::tick);
+      PGM.get().getServer().postToMainThread(PGM.get(), true, this::tick);
     }
   }
 
@@ -323,12 +314,13 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
                   column.forEach(
                       (filter, filterListeners) -> {
                         // If player joined very recently, they may not have a cached response yet
-                        final Boolean response = lastResponses.get(filter, event.getPlayer().getQuery());
+                        final Boolean response =
+                            lastResponses.get(filter, event.getPlayer().getQuery());
                         if (response != null && response) {
                           filterListeners.fall.forEach(
                               listener ->
                                   dispatch(
-                                          (FilterListener<? super PlayerQuery>) listener,
+                                      (FilterListener<? super PlayerQuery>) listener,
                                       filter,
                                       event.getPlayer().getQuery(),
                                       false));
@@ -365,9 +357,5 @@ public class FilterMatchModule implements MatchModule, Listener, FilterDispatche
     invalidate(match);
   }
 
-  // TODO: memes
-  //  @EventHandler(priority = EventPriority.MONITOR)
-  //  public void onRankingsChange(RankingsChangeEvent event) {
-  //    invalidate(match);
-  //  }
+  // TODO: Invalidate match on RankingsChangeEvent if/when it exists
 }
