@@ -16,6 +16,7 @@ import org.bukkit.event.player.PlayerBucketFillEvent;
 import tc.oc.pgm.api.filter.query.MatchQuery;
 import tc.oc.pgm.api.tracker.info.*;
 import tc.oc.pgm.api.tracker.info.PotionInfo;
+import tc.oc.pgm.renewable.BlockRenewEvent;
 import tc.oc.pgm.tracker.TrackerMatchModule;
 import tc.oc.pgm.tracker.info.ItemInfo;
 import tc.oc.pgm.tracker.info.ProjectileInfo;
@@ -32,6 +33,7 @@ public class CauseFilter extends TypedFilter<MatchQuery> {
     LIVING,
     MOB,
     PLAYER,
+    PLUGIN,
 
     // Block actions
     PUNCH,
@@ -114,6 +116,9 @@ public class CauseFilter extends TypedFilter<MatchQuery> {
 
       case PLAYER:
         return actor instanceof Player;
+
+      case PLUGIN:
+        return event instanceof BlockRenewEvent;
 
         // Block actions
       case PUNCH:
