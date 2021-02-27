@@ -3,6 +3,7 @@ package tc.oc.pgm.flag;
 import static java.util.stream.IntStream.range;
 
 import com.google.common.collect.ImmutableList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +14,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -25,6 +25,8 @@ import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchModule;
 import tc.oc.pgm.api.match.MatchScope;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
+import tc.oc.pgm.api.match.factory.MatchModuleFactory;
+import tc.oc.pgm.api.module.exception.ModuleLoadException;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.events.ListenerScope;
 import tc.oc.pgm.events.PlayerJoinMatchEvent;
@@ -38,6 +40,18 @@ import tc.oc.pgm.util.nms.NMSHacks;
 
 @ListenerScope(MatchScope.LOADED)
 public class LegacyFlagBeamMatchModule implements MatchModule, Listener {
+
+  public static class Factory implements MatchModuleFactory<LegacyFlagBeamMatchModule> {
+    @Override
+    public Collection<Class<? extends MatchModule>> getSoftDependencies() {
+      return ImmutableList.of(FlagMatchModule.class); // Only needs to load if Flags are loaded
+    }
+
+    @Override
+    public LegacyFlagBeamMatchModule createMatchModule(Match match) throws ModuleLoadException {
+      return new LegacyFlagBeamMatchModule(match);
+    }
+  }
 
   private static final int UPDATE_DELAY = 0;
   private static final int UPDATE_FREQUENCY = 50;
@@ -57,7 +71,7 @@ public class LegacyFlagBeamMatchModule implements MatchModule, Listener {
   }
 
   protected void retrackFlag(Flag flag) {
-    match.getParticipants().forEach(p -> retrackFlag(flag, p));
+    match.getPlayers().forEach(p -> retrackFlag(flag, p));
   }
 
   protected void retrackFlag(Flag flag, MatchPlayer player) {
@@ -66,7 +80,7 @@ public class LegacyFlagBeamMatchModule implements MatchModule, Listener {
   }
 
   protected void trackFlag(Flag flag) {
-    match.getParticipants().forEach(p -> trackFlag(flag, p));
+    match.getPlayers().forEach(p -> trackFlag(flag, p));
   }
 
   protected void trackFlag(Flag flag, MatchPlayer player) {
@@ -86,7 +100,7 @@ public class LegacyFlagBeamMatchModule implements MatchModule, Listener {
   }
 
   protected void untrackFlag(Flag flag) {
-    match.getParticipants().forEach(p -> untrackFlag(flag, p));
+    match.getPlayers().forEach(p -> untrackFlag(flag, p));
   }
 
   protected void untrackFlag(Flag flag, MatchPlayer player) {
@@ -105,7 +119,7 @@ public class LegacyFlagBeamMatchModule implements MatchModule, Listener {
   }
 
   @Override
-  public void disable() {
+  public void unload() {
     flags().forEach(this::untrackFlag);
     beams.clear();
     this.task.stop();
@@ -220,11 +234,7 @@ public class LegacyFlagBeamMatchModule implements MatchModule, Listener {
     }
 
     ItemStack wool() {
-      return new ItemBuilder()
-          .material(Material.WOOL)
-          .enchant(Enchantment.DURABILITY, 1)
-          .color(flag.getDyeColor())
-          .build();
+      return new ItemBuilder().material(Material.WOOL).color(flag.getDyeColor()).build();
     }
 
     void show() {
