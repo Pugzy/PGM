@@ -129,16 +129,17 @@ public class ScoreModule implements MapModule {
             region = regionParser.parseChildren(scoreBoxEl);
           } else {
             region = regionParser.parseRequiredRegionProperty(scoreBoxEl, "region");
+          }
 
-            Element elItems = scoreBoxEl.getChild("redeemables");
-            if (elItems != null) {
-              for (Element elItem : elItems.getChildren("item")) {
-                redeemables.put(
-                    XMLUtils.parseMaterialPattern(elItem),
-                    XMLUtils.parseNumber(Node.fromAttr(elItem, "points"), Double.class, 1D));
-              }
+          Element elItems = scoreBoxEl.getChild("redeemables");
+          if (elItems != null) {
+            for (Element elItem : elItems.getChildren("item")) {
+              redeemables.put(
+                  XMLUtils.parseMaterialPattern(elItem),
+                  XMLUtils.parseNumber(Node.fromAttr(elItem, "points"), Double.class, 1D));
             }
           }
+
           boolean silent = XMLUtils.parseBoolean(Node.fromAttr(scoreBoxEl, "silent"), false);
 
           scoreBoxFactories.add(
