@@ -238,7 +238,7 @@ public class ControlPoint extends SimpleGoal<ControlPointDefinition>
 
   private boolean canCapture(Competitor team) {
     return this.definition.getCaptureFilter() == null
-        || this.definition.getCaptureFilter().query(team.getQuery()).isAllowed();
+        || this.definition.getCaptureFilter().query(team).isAllowed();
   }
 
   private boolean canDominate(MatchPlayer player) {

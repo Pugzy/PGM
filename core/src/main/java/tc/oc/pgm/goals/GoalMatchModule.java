@@ -98,7 +98,7 @@ public class GoalMatchModule implements MatchModule, Listener {
   }
 
   private void addCompetitorGoal(Competitor competitor, Goal<?> goal) {
-    if (goal.canComplete(competitor)) {
+    if (!goalsByCompetitor.containsEntry(competitor, goal) && goal.canComplete(competitor)) {
       match.getLogger().fine("Competitor " + competitor + " can complete goal " + goal);
 
       goalsByCompetitor.put(competitor, goal);
@@ -144,6 +144,11 @@ public class GoalMatchModule implements MatchModule, Listener {
   }
 
   protected void updateProgress(Goal goal) {
+    // Check goal against competitors for updated conditions
+    for (Competitor competitor : match.getCompetitors()) {
+      addCompetitorGoal(competitor, goal);
+    }
+
     for (Competitor competitor : competitorsByGoal.get(goal)) {
       progressByCompetitor.put(competitor, new GoalProgress(competitor));
     }
