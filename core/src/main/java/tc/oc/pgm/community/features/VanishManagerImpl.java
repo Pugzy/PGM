@@ -208,9 +208,9 @@ public class VanishManagerImpl implements VanishManager, Listener {
   @EventHandler(priority = EventPriority.MONITOR)
   public void checkMatchPlayer(MatchPlayerAddEvent event) {
     MatchPlayer player = event.getPlayer();
-    // Player is joining to a team so broadcast join
-    if (event.getInitialParty() instanceof Competitor) {
-      setVanished(player, false, false);
+    // Player is joining to a team vanished so remove vanish
+    if (isVanished(player.getId()) && event.getInitialParty() instanceof Competitor) {
+      setVanished(player, false, true);
     }
 
     player.setVanished(isVanished(player.getId()));
