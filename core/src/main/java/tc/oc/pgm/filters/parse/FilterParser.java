@@ -44,6 +44,7 @@ import tc.oc.pgm.filters.matcher.match.RandomFilter;
 import tc.oc.pgm.filters.matcher.match.VariableFilter;
 import tc.oc.pgm.filters.matcher.party.CompetitorFilter;
 import tc.oc.pgm.filters.matcher.party.GoalFilter;
+import tc.oc.pgm.filters.matcher.party.IncrementalGoalFilter;
 import tc.oc.pgm.filters.matcher.party.RankFilter;
 import tc.oc.pgm.filters.matcher.party.ScoreFilter;
 import tc.oc.pgm.filters.matcher.party.TeamFilter;
@@ -423,6 +424,11 @@ public abstract class FilterParser implements XMLParser<Filter, FilterDefinition
   @MethodParser("captured")
   public Filter parseCaptured(Element el) throws InvalidXMLException {
     return parseExplicitTeam(el, goalFilter(el));
+  }
+
+  @MethodParser("progressed")
+  public Filter parseProgressed(Element el) throws InvalidXMLException {
+    return parseExplicitTeam(el, new IncrementalGoalFilter(features.createReference(new Node(el), GoalDefinition.class)));
   }
 
   protected FlagStateFilter parseFlagState(Element el, Class<? extends State> state)

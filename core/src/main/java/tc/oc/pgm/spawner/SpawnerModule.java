@@ -38,7 +38,12 @@ public class SpawnerModule implements MapModule {
 
   @Override
   public MatchModule createMatchModule(Match match) {
-    return new SpawnerMatchModule(match, spawnerDefinitions);
+    List<Spawner> spawners = new ArrayList<>(spawnerDefinitions.size());
+    for (SpawnerDefinition definition : this.spawnerDefinitions) {
+      spawners.add(new Spawner(definition, match));
+    }
+
+    return new SpawnerMatchModule(match, spawners);
   }
 
   public static class Factory implements MapModuleFactory<SpawnerModule> {
@@ -72,6 +77,7 @@ public class SpawnerModule implements MapModule {
               "Attribute 'minDelay' and 'maxDelay' cannot be combined with 'delay'", spawnerEl);
         }
 
+        Duration initialDelay = XMLUtils.parseDuration(spawnerEl.getAttribute("initial-delay"), Duration.ofSeconds(0));
         Duration delay = XMLUtils.parseDuration(delayAttr, Duration.ofSeconds(10));
         Duration minDelay = XMLUtils.parseDuration(minDelayAttr, delay);
         Duration maxDelay = XMLUtils.parseDuration(maxDelayAttr, delay);
@@ -79,6 +85,8 @@ public class SpawnerModule implements MapModule {
         if (maxDelay.compareTo(minDelay) <= 0 && minDelayAttr != null && maxDelayAttr != null) {
           throw new InvalidXMLException("Max-delay must be longer than min-delay", spawnerEl);
         }
+
+        boolean reset = XMLUtils.parseBoolean(spawnerEl.getAttribute("reset"), false);
 
         int maxEntities =
             XMLUtils.parseNumber(
@@ -126,9 +134,11 @@ public class SpawnerModule implements MapModule {
                 spawnRegion,
                 playerRegion,
                 playerFilter,
+                initialDelay,
                 delay,
                 minDelay,
                 maxDelay,
+                reset,
                 maxEntities);
         factory.getFeatures().addFeature(spawnerEl, spawnerDefinition);
         spawnerModule.spawnerDefinitions.add(spawnerDefinition);
