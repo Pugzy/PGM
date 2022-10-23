@@ -636,6 +636,11 @@ public class TeamMatchModule implements MatchModule, Listener, JoinHandler {
       }
     }
 
+
+//    setForced(event.getPlayer(), false);
+//    setAutoJoin(event.getPlayer(), false);
+//    setTeamSwitchKit(event.getPlayer(), false, false);
+
     if (event.getNewParty() instanceof ObserverParty) {
       setForced(event.getPlayer(), false);
     }

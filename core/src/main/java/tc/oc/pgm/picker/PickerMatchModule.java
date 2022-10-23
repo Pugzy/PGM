@@ -122,6 +122,7 @@ public class PickerMatchModule implements MatchModule, Listener {
     this.hasTeams = match.hasModule(TeamMatchModule.class);
     this.hasClasses = match.hasModule(ClassMatchModule.class);
     this.isBlitz = match.hasModule(BlitzMatchModule.class);
+    System.out.println(this.isBlitz);
   }
 
   protected boolean settingEnabled(MatchPlayer player, boolean playerTriggered) {

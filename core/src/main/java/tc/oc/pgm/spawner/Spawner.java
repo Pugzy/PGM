@@ -32,35 +32,28 @@ public class Spawner implements Listener, Tickable {
   private final SpawnerDefinition definition;
   private final RegionPlayerTracker playerTracker;
 
-  private long ticksUntilSpawn;
-  private Long lastSpawnTick;
-  private long currentDelay;
+  private Long ticksUntilSpawn;
   private long spawnedEntities;
 
   public Spawner(SpawnerDefinition definition, Match match) {
     this.definition = definition;
     this.match = match;
-    this.lastSpawnTick = null;
     this.ticksUntilSpawn = TimeUtils.toTicks(definition.initialDelay);
     this.playerTracker = new RegionPlayerTracker(match, definition.playerRegion);
-    calculateDelay();
   }
 
   @Override
   public void tick(Match match, Tick tick) {
-    if (!canSpawn()) return;
+    if (!canSpawn()) {
+//      if (this.definition.reset) calculateDelay();
+      return;
+    }
+
+    if (ticksUntilSpawn == null) calculateDelay();
 
     ticksUntilSpawn--;
 
-
-
-    if (lastSpawnTick == null) lastSpawnTick = match.getTick().tick;
-
-    //Bukkit.broadcastMessage("" + ticksUntilSpawn);
-    boolean earlySpawn = match.getTick().tick - lastSpawnTick > ticksUntilSpawn;
-    boolean countdownSpawn = ticksUntilSpawn > 0;
-
-    if ((definition.reset && !countdownSpawn) || !earlySpawn) return;
+    if (ticksUntilSpawn > 0) return;
 
     for (Spawnable spawnable : definition.objects) {
       final Location location =
@@ -74,9 +67,7 @@ public class Spawner implements Listener, Tickable {
   }
 
   private void calculateDelay() {
-    if (lastSpawnTick == null) {
-      ticksUntilSpawn = TimeUtils.toTicks(definition.initialDelay);
-    } else if (definition.minDelay == definition.maxDelay) {
+    if (definition.minDelay == definition.maxDelay) {
       ticksUntilSpawn = TimeUtils.toTicks(definition.delay);
     } else {
       long maxDelay = TimeUtils.toTicks(definition.maxDelay);
@@ -92,8 +83,9 @@ public class Spawner implements Listener, Tickable {
 
   private boolean canSpawn() {
     if (spawnedEntities >= definition.maxEntities || this.playerTracker.getPlayers().isEmpty()) {
-      if (this.definition.reset) {
-        lastSpawnTick = match.getTick().tick;
+      if (ticksUntilSpawn != null && definition.reset) {
+        Bukkit.broadcastMessage("Reset " + definition.getId() + " spawn in " + ticksUntilSpawn);
+        this.ticksUntilSpawn = null;
       }
       return false;
     }
