@@ -93,7 +93,13 @@ public class MapIncludeProcessorImpl implements MapIncludeProcessor {
       logger.warning(config.getIncludesDirectory() + " is not a directory!");
       return;
     }
-    File[] files = includeFiles.listFiles();
+
+    File[] files = includeFiles.listFiles((dir, name) -> name.toLowerCase().endsWith(".xml"));
+    if (files == null || files.length == 0) {
+      logger.info(config.getIncludesDirectory() + " was empty (no .xml files found)");
+      return;
+    }
+
     for (File file : files) {
       try {
         MapIncludeImpl include = new MapIncludeImpl(file);
