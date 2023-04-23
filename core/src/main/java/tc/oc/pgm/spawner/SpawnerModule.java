@@ -29,6 +29,7 @@ import tc.oc.pgm.spawner.objects.SpawnableItem;
 import tc.oc.pgm.spawner.objects.SpawnablePotion;
 import tc.oc.pgm.util.xml.InheritingElement;
 import tc.oc.pgm.util.xml.InvalidXMLException;
+import tc.oc.pgm.util.xml.Node;
 import tc.oc.pgm.util.xml.XMLUtils;
 
 public class SpawnerModule implements MapModule<SpawnerMatchModule> {
@@ -37,7 +38,12 @@ public class SpawnerModule implements MapModule<SpawnerMatchModule> {
 
   @Override
   public SpawnerMatchModule createMatchModule(Match match) {
-    return new SpawnerMatchModule(match, spawnerDefinitions);
+    List<Spawner> spawners = new ArrayList<>(spawnerDefinitions.size());
+    for (SpawnerDefinition definition : this.spawnerDefinitions) {
+      spawners.add(new Spawner(definition, match));
+    }
+
+    return new SpawnerMatchModule(match, spawners);
   }
 
   public static class Factory implements MapModuleFactory<SpawnerModule> {
@@ -71,6 +77,13 @@ public class SpawnerModule implements MapModule<SpawnerMatchModule> {
               "Attribute 'minDelay' and 'maxDelay' cannot be combined with 'delay'", spawnerEl);
         }
 
+        // TODO: validation :shrug:
+        // - Ticks down only when players are in the region
+        // - Ticks down all the time (only spawns when in region)
+        // - Ticks reset when no player in region
+
+        Duration initialDelay =
+            XMLUtils.parseDuration(spawnerEl.getAttribute("initial-delay"), Duration.ofSeconds(0));
         Duration delay = XMLUtils.parseDuration(delayAttr, Duration.ofSeconds(10));
         Duration minDelay = XMLUtils.parseDuration(minDelayAttr, delay);
         Duration maxDelay = XMLUtils.parseDuration(maxDelayAttr, delay);
@@ -78,6 +91,15 @@ public class SpawnerModule implements MapModule<SpawnerMatchModule> {
         if (maxDelay.compareTo(minDelay) <= 0 && minDelayAttr != null && maxDelayAttr != null) {
           throw new InvalidXMLException("Max-delay must be longer than min-delay", spawnerEl);
         }
+
+        boolean reset = XMLUtils.parseBoolean(spawnerEl.getAttribute("reset"), false);
+
+        SpawnerDefinition.TickCondition tickCondition =
+            XMLUtils.parseEnum(
+                Node.fromAttr(spawnerEl, "tick-rule"),
+                SpawnerDefinition.TickCondition.class,
+                "tick rule",
+                SpawnerDefinition.TickCondition.ALWAYS);
 
         int maxEntities =
             XMLUtils.parseNumber(
@@ -125,10 +147,13 @@ public class SpawnerModule implements MapModule<SpawnerMatchModule> {
                 spawnRegion,
                 playerRegion,
                 playerFilter,
+                initialDelay,
                 delay,
                 minDelay,
                 maxDelay,
-                maxEntities);
+                reset,
+                maxEntities,
+                tickCondition);
         factory.getFeatures().addFeature(spawnerEl, spawnerDefinition);
         spawnerModule.spawnerDefinitions.add(spawnerDefinition);
       }

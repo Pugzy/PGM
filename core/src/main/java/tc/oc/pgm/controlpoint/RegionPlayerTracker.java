@@ -25,7 +25,7 @@ public class RegionPlayerTracker implements Listener {
   // The region to check against
   private Region region;
   // A static filter players must match when entering
-  private @Nullable Filter staticFilter;
+  private final @Nullable Filter staticFilter;
 
   public RegionPlayerTracker(Match match, Region region) {
     this(match, region, null);
