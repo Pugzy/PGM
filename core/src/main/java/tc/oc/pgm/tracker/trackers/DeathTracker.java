@@ -3,6 +3,7 @@ package tc.oc.pgm.tracker.trackers;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -11,8 +12,10 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.jetbrains.annotations.Nullable;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.api.tracker.info.DamageInfo;
+import tc.oc.pgm.damagehistory.DamageHistoryMatchModule;
 import tc.oc.pgm.tracker.TrackerMatchModule;
 import tc.oc.pgm.tracker.info.GenericDamageInfo;
 import tc.oc.pgm.util.ClassLogger;
@@ -68,7 +71,15 @@ public class DeathTracker implements Listener {
     DamageInfo info = getLastDamage(victim);
     if (info == null) info = new GenericDamageInfo(EntityDamageEvent.DamageCause.CUSTOM);
 
+    ParticipantState assister = null;
+    DamageHistoryMatchModule dhm = match.getModule(DamageHistoryMatchModule.class);
+    if (dhm != null) assister = dhm.getAssister(victim);
+
+    String assistName = (assister != null) ? assister.getNameLegacy() : "no assist";
+    Bukkit.broadcastMessage(assistName);
+
     match.callEvent(
-        new MatchPlayerDeathEvent(event, victim, info, CombatLogTracker.isCombatLog(event)));
+        new MatchPlayerDeathEvent(
+            event, victim, info, CombatLogTracker.isCombatLog(event), assister));
   }
 }

@@ -484,25 +484,6 @@ public abstract class FilterParser implements XMLParser<Filter, FilterDefinition
     return new WearingItemFilter(factory.getKits().parseItemMatcher(el));
   }
 
-  @MethodParser("damage")
-  public DamageFilter parseDamage(Element el) throws InvalidXMLException {
-
-    Integer count = XMLUtils.parseNumber(el.getAttribute("count"), Integer.class, 1);
-    Double min = XMLUtils.parseNumber(el.getAttribute("min"), Double.class, (Double) null);
-    Double max = XMLUtils.parseNumber(el.getAttribute("max"), Double.class, (Double) null);
-    Range<Double> range = Range.all();
-
-    if (min != null && max != null) {
-      range = Range.closed(min, max);
-    } else if (min != null) {
-      range = Range.atLeast(min);
-    } else if (max != null) {
-      range = Range.atMost(max);
-    }
-
-    return new DamageFilter(range, count);
-  }
-
   @MethodParser("effect")
   public EffectFilter parseEffect(Element el) throws InvalidXMLException {
     Duration minDuration = XMLUtils.parseDuration(Node.fromAttr(el, "min-duration"));

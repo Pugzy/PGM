@@ -16,13 +16,19 @@ public class MatchPlayerDeathEvent extends MatchPlayerEvent {
   private final PlayerDeathEvent parent;
   private final DamageInfo damageInfo;
   private final boolean predicted;
+  private @Nullable final ParticipantState assister;
 
   public MatchPlayerDeathEvent(
-      PlayerDeathEvent parent, MatchPlayer victim, DamageInfo damageInfo, boolean predicted) {
+      PlayerDeathEvent parent,
+      MatchPlayer victim,
+      DamageInfo damageInfo,
+      boolean predicted,
+      @Nullable ParticipantState assister) {
     super(assertNotNull(victim));
-    this.parent = assertNotNull(parent);
-    this.damageInfo = assertNotNull(damageInfo);
+    this.parent = parent;
+    this.damageInfo = damageInfo;
     this.predicted = predicted;
+    this.assister = assister;
   }
 
   /**

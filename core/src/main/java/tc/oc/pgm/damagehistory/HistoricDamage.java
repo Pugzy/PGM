@@ -1,21 +1,21 @@
 package tc.oc.pgm.damagehistory;
 
 import javax.annotation.Nullable;
-import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.api.player.ParticipantState;
 
 public class HistoricDamage {
 
-  @Nullable private final MatchPlayer player;
+  @Nullable private final ParticipantState player;
 
   private double damage;
 
-  public HistoricDamage(@Nullable MatchPlayer player, double damage) {
+  public HistoricDamage(@Nullable ParticipantState player, double damage) {
     this.player = player;
     this.damage = damage;
   }
 
   @Nullable
-  public MatchPlayer getPlayer() {
+  public ParticipantState getPlayer() {
     return player;
   }
 

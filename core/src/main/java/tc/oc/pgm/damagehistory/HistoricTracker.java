@@ -7,7 +7,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.kyori.adventure.text.TextComponent;
@@ -15,6 +14,7 @@ import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.jetbrains.annotations.NotNull;
 import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.api.player.ParticipantState;
 
 public class HistoricTracker {
 
@@ -22,14 +22,15 @@ public class HistoricTracker {
 
   public HistoricTracker() {}
 
-  public void addDamage(MatchPlayer target, double damageAmount, @Nullable MatchPlayer attacker) {
+  public void addDamage(
+      MatchPlayer target, double damageAmount, @Nullable ParticipantState attacker) {
 
     Deque<HistoricDamage> playerHistory = getPlayerHistory(target.getId());
 
     // Update existing if same player causing damage
     if (!playerHistory.isEmpty()) {
       HistoricDamage last = playerHistory.getLast();
-      if (Objects.equals(last.getPlayer(), attacker)) {
+      if (shouldMergeParticipants(last.getPlayer(), attacker)) {
         last.addDamage(damageAmount);
         target.getMatch().sendMessage(this.broadcast(target, playerHistory));
         return;
@@ -65,6 +66,15 @@ public class HistoricTracker {
     return allPlayerDamage.computeIfAbsent(uuid, item -> new LinkedList<>());
   }
 
+  public boolean shouldMergeParticipants(ParticipantState firstItem, ParticipantState secondItem) {
+    if (firstItem == null || secondItem == null) return firstItem == null && secondItem == null;
+
+    // Do not allow if different UUIDs
+    if (!firstItem.getId().equals(secondItem.getId())) return false;
+    // Check that the participants parties match
+    return (firstItem.getParty().equals(secondItem.getParty()));
+  }
+
   public @NotNull TextComponent broadcast(MatchPlayer player, Deque<HistoricDamage> playerHistory) {
 
     TextComponent.Builder component = text();
@@ -78,7 +88,6 @@ public class HistoricTracker {
 
     playerHistory.forEach(
         item -> {
-          System.out.println(item);
           component
               .append(text(" - "))
               .append(item.getPlayer() != null ? item.getPlayer().getName() : text("Unknown"))
