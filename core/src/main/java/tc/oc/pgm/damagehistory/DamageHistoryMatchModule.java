@@ -5,7 +5,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -23,14 +22,12 @@ import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchModule;
 import tc.oc.pgm.api.match.MatchScope;
-import tc.oc.pgm.api.party.Competitor;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.tracker.info.DamageInfo;
 import tc.oc.pgm.events.ListenerScope;
 import tc.oc.pgm.spawns.events.ParticipantDespawnEvent;
 import tc.oc.pgm.tracker.TrackerMatchModule;
-import tc.oc.pgm.util.Pair;
 import tc.oc.pgm.util.nms.NMSHacks;
 
 @ListenerScope(MatchScope.RUNNING)
@@ -61,7 +58,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
 
     Collections.reverse((List<?>) damageHistory);
 
-    Set<Map.Entry<Pair<UUID, Competitor>, Double>> entries =
+    Set<Map.Entry<DamageHistoryKey, Double>> entries =
         damageHistory.stream()
             // Filter out damage without players, or damage from self or killer
             .filter(
@@ -73,31 +70,24 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
                 })
             .collect(
                 Collectors.groupingBy(
-                    historicDamage ->
-                        Pair.of(
-                            historicDamage.getPlayer().getId(),
-                            historicDamage.getPlayer().getParty()),
+                    DamageHistoryKey::from,
                     Collectors.mapping(
                         HistoricDamage::getDamage, Collectors.reducing(0d, Double::sum))))
             .entrySet();
 
     entries.forEach(
-        entry -> logger.log(Level.INFO, entry.getKey().getLeft() + ": " + entry.getValue()));
+        entry ->
+            logger.log(
+                Level.INFO, entry.getKey().getState().getNameLegacy() + ": " + entry.getValue()));
 
-    Map.Entry<Pair<UUID, Competitor>, Double> highestDamager =
+    Map.Entry<DamageHistoryKey, Double> highestDamager =
         entries.stream().max(Map.Entry.comparingByValue()).orElse(null);
 
     if (highestDamager == null
-        || highestDamager.getValue() < (health * PGM.get().getConfiguration().getAssistPercent()))
-      return null;
+        || highestDamager.getValue() < (health * PGM.get().getConfiguration().getAssistPercent())
+        || highestDamager.getKey().getParty().equals(player.getParty())) return null;
 
-    // Make sure player exists on same team as damage dealt as an enemy
-    MatchPlayer assister = player.getMatch().getPlayer(highestDamager.getKey().getLeft());
-    if (assister == null
-        || !assister.getParty().equals(highestDamager.getKey().getRight())
-        || assister.getParty().equals(player.getParty())) return null;
-
-    return assister.getParticipantState();
+    return highestDamager.getKey().getState();
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

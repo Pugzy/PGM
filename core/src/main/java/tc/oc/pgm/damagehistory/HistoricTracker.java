@@ -22,6 +22,10 @@ public class HistoricTracker {
 
   public HistoricTracker() {}
 
+  public final Deque<HistoricDamage> getPlayerHistory(UUID uuid) {
+    return allPlayerDamage.computeIfAbsent(uuid, item -> new LinkedList<>());
+  }
+
   public void addDamage(
       MatchPlayer target, double damageAmount, @Nullable ParticipantState attacker) {
 
@@ -60,10 +64,6 @@ public class HistoricTracker {
     }
 
     target.getMatch().sendMessage(this.broadcast(target, playerHistory));
-  }
-
-  public final Deque<HistoricDamage> getPlayerHistory(UUID uuid) {
-    return allPlayerDamage.computeIfAbsent(uuid, item -> new LinkedList<>());
   }
 
   public boolean shouldMergeParticipants(ParticipantState firstItem, ParticipantState secondItem) {
