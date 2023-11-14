@@ -11,6 +11,8 @@ import tc.oc.pgm.api.player.ParticipantState;
 
 public class DamageHistory {
 
+  public static final double EPSILON = 0.00001;
+
   private final Map<UUID, Deque<DamageEntry>> allPlayerDamage = new HashMap<>();
 
   public DamageHistory() {}
@@ -26,7 +28,7 @@ public class DamageHistory {
     // Update existing if same player causing damage
     if (!playerHistory.isEmpty()) {
       DamageEntry last = playerHistory.getLast();
-      if (shouldMergeParticipants(last.getPlayer(), attacker)) {
+      if (shouldMergeParticipants(last.getDamager(), attacker)) {
         last.addDamage(attacker, damageAmount);
         return;
       }
@@ -42,7 +44,7 @@ public class DamageHistory {
     double subtractAmount = damageAmount;
     while (!playerHistory.isEmpty() && subtractAmount > 0) {
       DamageEntry first = playerHistory.getFirst();
-      if (first.getDamage() < subtractAmount + 0.00001) { // make 0.0...1 const epsilon
+      if (first.getDamage() < subtractAmount + EPSILON) {
         subtractAmount -= first.getDamage();
         playerHistory.removeFirst();
       } else {

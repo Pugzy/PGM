@@ -155,7 +155,6 @@ public class DamageMatchModule implements MatchModule, Listener {
     if (response.isDenied()) {
       event.setCancelled(true);
     }
-
     return response;
   }
 

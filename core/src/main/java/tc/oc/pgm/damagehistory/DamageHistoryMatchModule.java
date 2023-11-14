@@ -5,8 +5,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.bukkit.entity.Entity;
@@ -34,12 +32,10 @@ import tc.oc.pgm.util.nms.NMSHacks;
 public class DamageHistoryMatchModule implements MatchModule, Listener {
 
   private final Match match;
-  private final Logger logger;
   private final DamageHistory damageHistory;
 
   public DamageHistoryMatchModule(Match match) {
     this.match = match;
-    this.logger = match.getLogger();
     this.damageHistory = new DamageHistory();
   }
 
@@ -51,7 +47,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
     Deque<DamageEntry> damageHistory = this.damageHistory.getPlayerHistory(player.getId());
     if (damageHistory == null || damageHistory.size() <= 1) return null;
 
-    ParticipantState killer = damageHistory.getLast().getPlayer();
+    ParticipantState killer = damageHistory.getLast().getDamager();
     if (killer == null) return null;
 
     double damageReceived = damageHistory.stream().mapToDouble(DamageEntry::getDamage).sum();
@@ -63,7 +59,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
             // Filter out damage without players, or damage from self or killer
             .filter(
                 historicDamage -> {
-                  ParticipantState damager = historicDamage.getPlayer();
+                  ParticipantState damager = historicDamage.getDamager();
                   return !(damager == null
                       || damager.getId().equals(player.getId())
                       || damager.getId().equals(killer.getId()));
@@ -75,16 +71,12 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
                         DamageEntry::getDamage, Collectors.reducing(0d, Double::sum))))
             .entrySet();
 
-    entries.forEach(
-        entry ->
-            logger.log(
-                Level.INFO, entry.getKey().getState().getNameLegacy() + ": " + entry.getValue()));
-
     Map.Entry<DamageHistoryKey, Double> highestDamager =
         entries.stream().max(Map.Entry.comparingByValue()).orElse(null);
 
     if (highestDamager == null
-        || highestDamager.getValue() < (damageReceived * PGM.get().getConfiguration().getAssistPercent())
+        || highestDamager.getValue()
+            < (damageReceived * PGM.get().getConfiguration().getAssistPercent())
         || highestDamager.getKey().getParty().equals(player.getParty())) return null;
 
     return highestDamager.getKey().getState();

@@ -5,25 +5,25 @@ import tc.oc.pgm.api.player.ParticipantState;
 
 public class DamageEntry {
 
-  @Nullable private ParticipantState player;
+  @Nullable private ParticipantState damager;
   private double damage;
 
-  public DamageEntry(@Nullable ParticipantState player, double damage) {
-    this.player = player;
+  public DamageEntry(@Nullable ParticipantState damager, double damage) {
+    this.damager = damager;
     this.damage = damage;
   }
 
   @Nullable
-  public ParticipantState getPlayer() {
-    return player;
+  public ParticipantState getDamager() {
+    return damager;
   }
 
   public double getDamage() {
     return damage;
   }
 
-  public void addDamage(@Nullable ParticipantState player, double damage) {
-    this.player = player;
+  public void addDamage(@Nullable ParticipantState damager, double damage) {
+    this.damager = damager;
     this.damage += damage;
   }
 

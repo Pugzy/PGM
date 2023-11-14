@@ -9,32 +9,28 @@ import tc.oc.pgm.api.player.ParticipantState;
 
 public class DamageHistoryKey {
 
-  private final UUID player;
-  private final Competitor party;
   private final ParticipantState state;
 
-  public DamageHistoryKey(UUID player, Competitor party, ParticipantState state) {
-    this.player = player;
-    this.party = party;
+  public DamageHistoryKey(ParticipantState state) {
     this.state = state;
   }
 
   public static DamageHistoryKey from(DamageEntry damageEntry) {
-    ParticipantState damager = damageEntry.getPlayer();
+    ParticipantState damager = damageEntry.getDamager();
     assertNotNull(damager);
-    return new DamageHistoryKey(damager.getId(), damager.getParty(), damager);
-  }
-
-  public UUID getPlayer() {
-    return player;
-  }
-
-  public Competitor getParty() {
-    return party;
+    return new DamageHistoryKey(damager);
   }
 
   public ParticipantState getState() {
     return state;
+  }
+
+  public UUID getPlayer() {
+    return state.getId();
+  }
+
+  public Competitor getParty() {
+    return state.getParty();
   }
 
   @Override
@@ -42,11 +38,12 @@ public class DamageHistoryKey {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DamageHistoryKey that = (DamageHistoryKey) o;
-    return Objects.equals(player, that.player) && Objects.equals(party, that.party);
+    return Objects.equals(getPlayer(), that.getPlayer())
+        && Objects.equals(getParty(), that.getParty());
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(player, party);
+    return Objects.hash(getPlayer(), getParty());
   }
 }

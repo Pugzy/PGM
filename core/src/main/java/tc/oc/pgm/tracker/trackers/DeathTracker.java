@@ -3,7 +3,6 @@ package tc.oc.pgm.tracker.trackers;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
-import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -74,9 +73,6 @@ public class DeathTracker implements Listener {
     ParticipantState assister = null;
     DamageHistoryMatchModule dhm = match.getModule(DamageHistoryMatchModule.class);
     if (dhm != null) assister = dhm.getAssister(victim);
-
-    String assistName = (assister != null) ? assister.getNameLegacy() : "no assist";
-    Bukkit.broadcastMessage(assistName);
 
     match.callEvent(
         new MatchPlayerDeathEvent(
