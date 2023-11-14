@@ -3,13 +3,12 @@ package tc.oc.pgm.damagehistory;
 import javax.annotation.Nullable;
 import tc.oc.pgm.api.player.ParticipantState;
 
-public class HistoricDamage {
+public class DamageEntry {
 
-  @Nullable private final ParticipantState player;
-
+  @Nullable private ParticipantState player;
   private double damage;
 
-  public HistoricDamage(@Nullable ParticipantState player, double damage) {
+  public DamageEntry(@Nullable ParticipantState player, double damage) {
     this.player = player;
     this.damage = damage;
   }
@@ -23,7 +22,12 @@ public class HistoricDamage {
     return damage;
   }
 
-  public void addDamage(double damage) {
+  public void addDamage(@Nullable ParticipantState player, double damage) {
+    this.player = player;
     this.damage += damage;
+  }
+
+  public void removeDamage(double damage) {
+    this.damage -= damage;
   }
 }

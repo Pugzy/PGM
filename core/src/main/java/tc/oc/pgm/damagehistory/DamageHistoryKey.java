@@ -19,8 +19,8 @@ public class DamageHistoryKey {
     this.state = state;
   }
 
-  public static DamageHistoryKey from(HistoricDamage historicDamage) {
-    ParticipantState damager = historicDamage.getPlayer();
+  public static DamageHistoryKey from(DamageEntry damageEntry) {
+    ParticipantState damager = damageEntry.getPlayer();
     assertNotNull(damager);
     return new DamageHistoryKey(damager.getId(), damager.getParty(), damager);
   }

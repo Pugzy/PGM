@@ -35,12 +35,12 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
 
   private final Match match;
   private final Logger logger;
-  private final HistoricTracker historicTracker;
+  private final DamageHistory damageHistory;
 
   public DamageHistoryMatchModule(Match match) {
     this.match = match;
     this.logger = match.getLogger();
-    this.historicTracker = new HistoricTracker();
+    this.damageHistory = new DamageHistory();
   }
 
   TrackerMatchModule tracker() {
@@ -48,13 +48,13 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
   }
 
   public @Nullable ParticipantState getAssister(MatchPlayer player) {
-    Deque<HistoricDamage> damageHistory = this.historicTracker.getPlayerHistory(player.getId());
+    Deque<DamageEntry> damageHistory = this.damageHistory.getPlayerHistory(player.getId());
     if (damageHistory == null || damageHistory.size() <= 1) return null;
 
     ParticipantState killer = damageHistory.getLast().getPlayer();
     if (killer == null) return null;
 
-    double health = damageHistory.stream().mapToDouble(HistoricDamage::getDamage).sum();
+    double damageReceived = damageHistory.stream().mapToDouble(DamageEntry::getDamage).sum();
 
     Collections.reverse((List<?>) damageHistory);
 
@@ -72,7 +72,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
                 Collectors.groupingBy(
                     DamageHistoryKey::from,
                     Collectors.mapping(
-                        HistoricDamage::getDamage, Collectors.reducing(0d, Double::sum))))
+                        DamageEntry::getDamage, Collectors.reducing(0d, Double::sum))))
             .entrySet();
 
     entries.forEach(
@@ -84,7 +84,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
         entries.stream().max(Map.Entry.comparingByValue()).orElse(null);
 
     if (highestDamager == null
-        || highestDamager.getValue() < (health * PGM.get().getConfiguration().getAssistPercent())
+        || highestDamager.getValue() < (damageReceived * PGM.get().getConfiguration().getAssistPercent())
         || highestDamager.getKey().getParty().equals(player.getParty())) return null;
 
     return highestDamager.getKey().getState();
@@ -96,24 +96,14 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
     if (victim == null) return;
 
     DamageInfo damageInfo = tracker().resolveDamage(event);
-
-    // Store damage with value
     ParticipantState attacker = damageInfo.getAttacker() != null ? damageInfo.getAttacker() : null;
 
-    historicTracker.addDamage(victim, getDamageAmount(event), attacker);
+    damageHistory.addDamage(victim, getDamageAmount(event), attacker);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDespawn(final ParticipantDespawnEvent event) {
-    Deque<HistoricDamage> playerHistory =
-        historicTracker.getPlayerHistory(event.getPlayer().getId());
-
-    event
-        .getPlayer()
-        .getMatch()
-        .sendMessage(historicTracker.broadcast(event.getPlayer(), playerHistory));
-
-    playerHistory.clear();
+    damageHistory.getPlayerHistory(event.getPlayer().getId()).clear();
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -122,8 +112,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
     if (victim == null) return;
 
     double maxHealing = victim.getBukkit().getMaxHealth() - victim.getBukkit().getHealth();
-
-    historicTracker.removeDamage(victim, Math.min(maxHealing, event.getAmount()));
+    damageHistory.removeDamage(victim, Math.min(maxHealing, event.getAmount()));
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -136,13 +125,12 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
     double currentHearts = NMSHacks.getAbsorption(event.getEntity());
     double newHearts = (event.getEffect().getAmplifier() + 1) * 4;
 
-    historicTracker.removeDamage(victim, Math.max(0, newHearts - currentHearts));
+    damageHistory.removeDamage(victim, Math.max(0, newHearts - currentHearts));
   }
 
   @Nullable
   MatchPlayer getVictim(Entity entity) {
     if (entity == null) return null;
-
     return match.getParticipant(entity);
   }
 
