@@ -1,6 +1,6 @@
 package tc.oc.pgm.damagehistory;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import tc.oc.pgm.api.player.ParticipantState;
 
 public class DamageEntry {

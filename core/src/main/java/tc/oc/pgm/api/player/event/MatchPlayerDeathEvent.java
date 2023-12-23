@@ -77,6 +77,15 @@ public class MatchPlayerDeathEvent extends MatchPlayerEvent {
   }
 
   /**
+   * Get the {@link ParticipantState} of the assisting killer.
+   *
+   * @return The assister {@link ParticipantState}, or {@code null} if no killer.
+   */
+  public @Nullable ParticipantState getAssister() {
+    return assister;
+  }
+
+  /**
    * Get whether the given {@link MatchPlayer} is the victim.
    *
    * @param player The {@link MatchPlayer} to check.

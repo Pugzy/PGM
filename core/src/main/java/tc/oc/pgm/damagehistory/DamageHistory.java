@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
 
@@ -17,7 +17,7 @@ public class DamageHistory {
 
   public DamageHistory() {}
 
-  public final Deque<DamageEntry> getPlayerHistory(UUID uuid) {
+  public Deque<DamageEntry> getPlayerHistory(UUID uuid) {
     return allPlayerDamage.computeIfAbsent(uuid, item -> new LinkedList<>());
   }
 

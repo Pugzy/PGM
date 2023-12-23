@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,6 +15,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.PotionEffectAddEvent;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.Nullable;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchModule;
@@ -43,8 +43,12 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
     return match.needModule(TrackerMatchModule.class);
   }
 
+  public Deque<DamageEntry> getDamageHistory(MatchPlayer player) {
+    return this.damageHistory.getPlayerHistory(player.getId());
+  }
+
   public @Nullable ParticipantState getAssister(MatchPlayer player) {
-    Deque<DamageEntry> damageHistory = this.damageHistory.getPlayerHistory(player.getId());
+    Deque<DamageEntry> damageHistory = getDamageHistory(player);
     if (damageHistory == null || damageHistory.size() <= 1) return null;
 
     ParticipantState killer = damageHistory.getLast().getDamager();
@@ -95,7 +99,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDespawn(final ParticipantDespawnEvent event) {
-    damageHistory.getPlayerHistory(event.getPlayer().getId()).clear();
+    getDamageHistory(event.getPlayer()).clear();
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
