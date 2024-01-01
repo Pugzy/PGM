@@ -24,6 +24,8 @@ import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
 import tc.oc.pgm.api.tracker.info.DamageInfo;
 import tc.oc.pgm.events.ListenerScope;
+import tc.oc.pgm.kits.ApplyKitEvent;
+import tc.oc.pgm.kits.HealthKit;
 import tc.oc.pgm.spawns.events.ParticipantDespawnEvent;
 import tc.oc.pgm.tracker.TrackerMatchModule;
 import tc.oc.pgm.util.nms.NMSHacks;
@@ -122,6 +124,28 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
     double newHearts = (event.getEffect().getAmplifier() + 1) * 4;
 
     damageHistory.removeDamage(victim, Math.max(0, newHearts - currentHearts));
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onHealthChangeKit(ApplyKitEvent event) {
+    if (!(event.getKit() instanceof HealthKit)) return;
+
+    HealthKit healthKit = (HealthKit) event.getKit();
+    Player bukkitPlayer = event.getPlayer().getBukkit();
+
+    double newHealth = Math.min(healthKit.getHalfHearts(), bukkitPlayer.getMaxHealth());
+    double currentHealth = bukkitPlayer.getHealth();
+    double healthChange = newHealth - currentHealth;
+
+    // Record damage or heal based on affect of kit
+    if (event.isForce() || currentHealth < newHealth) {
+      if (healthChange == 0) return;
+      if (healthChange >= 0) {
+        damageHistory.removeDamage(event.getPlayer(), healthChange);
+      } else {
+        damageHistory.addDamage(event.getPlayer(), -healthChange, null);
+      }
+    }
   }
 
   @Nullable
