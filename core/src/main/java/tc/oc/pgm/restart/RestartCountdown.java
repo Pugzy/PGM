@@ -6,7 +6,6 @@ import java.time.Duration;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.Bukkit;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.countdowns.MatchCountdown;
 import tc.oc.pgm.util.TimeUtils;
@@ -35,6 +34,5 @@ public class RestartCountdown extends MatchCountdown {
   @Override
   public void onEnd(Duration total) {
     super.onEnd(total);
-    Bukkit.getServer().shutdown();
   }
 }

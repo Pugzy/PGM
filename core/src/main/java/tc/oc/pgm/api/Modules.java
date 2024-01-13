@@ -29,6 +29,7 @@ import tc.oc.pgm.core.CoreModule;
 import tc.oc.pgm.crafting.CraftingMatchModule;
 import tc.oc.pgm.crafting.CraftingModule;
 import tc.oc.pgm.cycle.CycleMatchModule;
+import tc.oc.pgm.cycle.SmoothRestartModule;
 import tc.oc.pgm.damage.DamageMatchModule;
 import tc.oc.pgm.damage.DamageModule;
 import tc.oc.pgm.damage.DisableDamageMatchModule;
@@ -222,6 +223,7 @@ public final class Modules {
     register(PlayerTimeMatchModule.class, PlayerTimeMatchModule::new);
     register(SpectateMatchModule.class, SpectateMatchModule::new);
     register(DamageHistoryMatchModule.class, DamageHistoryMatchModule::new);
+    register(SmoothRestartModule.class, SmoothRestartModule::new);
 
     // FIXME: Disabled due to lag - look into future optimization
     // register(ProjectileTrailMatchModule.class, ProjectileTrailMatchModule::new);

@@ -12,7 +12,6 @@ import org.bukkit.configuration.ConfigurationSection;
 import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchScope;
-import tc.oc.pgm.restart.RestartManager;
 import tc.oc.pgm.rotation.MapPoolManager;
 import tc.oc.pgm.rotation.vote.MapPoll;
 import tc.oc.pgm.rotation.vote.MapVotePicker;
@@ -124,7 +123,7 @@ public class VotingPool extends MapPool {
               // Start poll here, to avoid starting it if you set next another map.
               if (manager.getOverriderMap() != null) return;
               // If there is a restart queued, don't start a vote
-              if (RestartManager.isQueued()) return;
+              // if (RestartManager.isQueued()) return;
 
               currentPoll =
                   new MapPoll(match, mapPicker.getMaps(manager.getVoteOptions(), mapScores));

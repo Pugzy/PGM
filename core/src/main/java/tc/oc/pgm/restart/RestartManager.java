@@ -60,6 +60,10 @@ public class RestartManager {
     return !deferrals.isEmpty();
   }
 
+  public static boolean isDeferredByOther(RequestRestartEvent.Deferral deferral) {
+    return deferrals.size() > 1 || !deferrals.contains(deferral);
+  }
+
   public static boolean isDeferredBy(RequestRestartEvent.Deferral deferral) {
     return deferrals.contains(deferral);
   }

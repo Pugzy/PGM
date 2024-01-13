@@ -6,6 +6,12 @@ import org.bukkit.plugin.Plugin;
 
 public class RequestRestartEvent extends Event {
 
+  private final Runnable callback;
+
+  public RequestRestartEvent(Runnable callback) {
+    this.callback = callback;
+  }
+
   public class Deferral {
     private final Plugin plugin;
 
@@ -23,6 +29,7 @@ public class RequestRestartEvent extends Event {
      */
     public void remove() {
       RestartManager.removeDeferral(this);
+      callback.run();
     }
 
     public boolean isDeferring() {

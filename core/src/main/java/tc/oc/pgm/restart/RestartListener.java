@@ -14,6 +14,7 @@ import tc.oc.pgm.api.match.MatchManager;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.countdowns.SingleCountdownContext;
+import tc.oc.pgm.events.CountdownEndEvent;
 import tc.oc.pgm.events.PlayerPartyChangeEvent;
 import tc.oc.pgm.util.ClassLogger;
 
@@ -24,17 +25,25 @@ public class RestartListener implements Listener {
   private final Logger logger;
 
   private long matchCount;
-  private @Nullable RequestRestartEvent.Deferral deferral;
+  private boolean countdownComplete = false;
+
+  private @Nullable RequestRestartEvent.Deferral playingDeferral;
+  private @Nullable RequestRestartEvent.Deferral countdownDeferral;
+
+  static RestartListener instance;
 
   public RestartListener(PGM plugin, MatchManager matchManager) {
     this.plugin = plugin;
     this.matchManager = matchManager;
     this.logger = ClassLogger.get(plugin.getLogger(), getClass());
+    instance = this;
+  }
+
+  public static RestartListener getInstance() {
+    return instance;
   }
 
   private void attemptMatchEnd(Match match) {
-    if (this.deferral == null) return;
-
     if (match.isRunning()) {
       if (match.getParticipants().isEmpty()) {
         this.logger.info("Ending empty match due to restart request");
@@ -43,28 +52,49 @@ public class RestartListener implements Listener {
     }
   }
 
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onRestartCountdownEnd(CountdownEndEvent event) {
+    if (!(event.getCountdown() instanceof RestartCountdown)) return;
+
+    releaseCountdownDeferral();
+  }
+
   @EventHandler
   public void onRequestRestart(RequestRestartEvent event) {
-    if (this.plugin.getServer().getOnlinePlayers().isEmpty()) {
-      Bukkit.getServer().shutdown();
-    } else {
-      Iterator<Match> iterator = matchManager.getMatches();
-      Match match = iterator.hasNext() ? iterator.next() : null;
-      if (match != null) {
-        this.deferral = event.defer(this.plugin);
-        if (match.isRunning()) {
-          attemptMatchEnd(match);
-        } else {
-          SingleCountdownContext ctx = (SingleCountdownContext) match.getCountdown();
-          ctx.cancelAll();
+    if (this.plugin.getServer().getOnlinePlayers().isEmpty()) return;
 
-          Duration countdownTime =
-              RestartManager.getCountdown() != null
-                  ? RestartManager.getCountdown()
-                  : PGM.get().getConfiguration().getRestartTime();
-          this.logger.info("Starting restart countdown from " + countdownTime);
-          ctx.start(new RestartCountdown(match), countdownTime);
-        }
+    Iterator<Match> iterator = matchManager.getMatches();
+    Match match = iterator.hasNext() ? iterator.next() : null;
+    if (match != null) {
+
+      // Always create a deferral so we can do a countdown
+      this.countdownDeferral = event.defer(this.plugin);
+
+      if (match.isRunning()) {
+        this.playingDeferral = event.defer(this.plugin);
+        attemptMatchEnd(match);
+      } else {
+        startRestartCountdown(match);
+      }
+    }
+  }
+
+  public void startRestartCountdown(Match match) {
+    if (!match.isRunning() && this.countdownDeferral != null) {
+
+      if (RestartManager.isDeferredByOther(countdownDeferral)) return;
+
+      if (!match.isRunning() && !countdownComplete) {
+        // Start restart countdown if running
+        SingleCountdownContext ctx = (SingleCountdownContext) match.getCountdown();
+        ctx.cancelAll();
+
+        Duration countdownTime =
+            RestartManager.getCountdown() != null
+                ? RestartManager.getCountdown()
+                : PGM.get().getConfiguration().getRestartTime();
+        this.logger.info("Starting restart countdown from " + countdownTime);
+        ctx.start(new RestartCountdown(match), countdownTime);
       }
     }
   }
@@ -79,16 +109,58 @@ public class RestartListener implements Listener {
         this.logger.info("Cancelling restart countdown");
         ctx.cancelAll();
       }
-      this.deferral = null;
     }
     RestartManager.cancelRestart();
+    this.countdownComplete = false;
+    releaseCountdownDeferral();
+  }
+
+  private void releaseCountdownDeferral() {
+    if (this.countdownDeferral != null) {
+      this.countdownDeferral.remove();
+      this.countdownDeferral = null;
+    }
+  }
+
+  private void releasePlayingDeferral() {
+    if (this.playingDeferral != null) {
+      this.playingDeferral.remove();
+      this.playingDeferral = null;
+    }
   }
 
   @EventHandler(priority = EventPriority.LOW)
   public void onMatchEnd(MatchFinishEvent event) {
-    if (RestartManager.isQueued()) {
-      this.plugin.getServer().getPluginManager().callEvent(new RequestRestartEvent());
-    }
+    releasePlayingDeferral();
+
+    // When restart queued but not caught by the listener
+    if (RestartManager.isQueued() && countdownDeferral == null) requestRestart();
+
+    // When restart caught start countdown
+    if (countdownDeferral != null) startRestartCountdown(event.getMatch());
+  }
+
+  public void restartIfRequired() {
+    // If no restart requested, don't restart
+    if (!RestartManager.isQueued()) return;
+
+    // If there are deferrals don't restart
+    if (RestartManager.isDeferred()) return;
+
+    Bukkit.getServer().broadcastMessage("shutdown");
+    // Bukkit.getServer().shutdown();
+  }
+
+  public void requestRestart() {
+    // Don't start a second restart
+    if (countdownDeferral != null) return;
+
+    this.plugin
+        .getServer()
+        .getPluginManager()
+        .callEvent(new RequestRestartEvent(this::restartIfRequired));
+
+    this.restartIfRequired();
   }
 
   @EventHandler

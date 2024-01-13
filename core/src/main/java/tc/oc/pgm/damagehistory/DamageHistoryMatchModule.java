@@ -137,7 +137,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
     double currentHealth = bukkitPlayer.getHealth();
     double healthChange = newHealth - currentHealth;
 
-    // Record damage or heal based on affect of kit
+    // Record damage or heal based on effect of kit
     if (event.isForce() || currentHealth < newHealth) {
       if (healthChange == 0) return;
       if (healthChange >= 0) {

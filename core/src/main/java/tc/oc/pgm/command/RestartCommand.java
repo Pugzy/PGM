@@ -11,7 +11,7 @@ import java.time.Duration;
 import net.kyori.adventure.text.format.NamedTextColor;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.match.Match;
-import tc.oc.pgm.restart.RequestRestartEvent;
+import tc.oc.pgm.restart.RestartListener;
 import tc.oc.pgm.restart.RestartManager;
 import tc.oc.pgm.util.Audience;
 
@@ -37,6 +37,8 @@ public final class RestartCommand {
       audience.sendMessage(translatable("admin.queueRestart.restartingNow", NamedTextColor.GREEN));
     }
 
-    match.callEvent(new RequestRestartEvent());
+    RestartListener.getInstance().requestRestart();
+    // Need someway to do this but containing the callback
+    // match.callEvent(new RequestRestartEvent());
   }
 }
