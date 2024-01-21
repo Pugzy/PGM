@@ -17,6 +17,10 @@ public class MaxHealthKit extends AbstractKit {
     this.maxHealth = maxHealth;
   }
 
+  public double getMaxHealth() {
+    return maxHealth;
+  }
+
   @Override
   public void applyPostEvent(MatchPlayer player, boolean force, List<ItemStack> displacedItems) {
     player.getBukkit().setMaxHealth(maxHealth);

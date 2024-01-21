@@ -9,6 +9,8 @@ import org.jetbrains.annotations.Nullable;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
 
+import static net.kyori.adventure.text.Component.text;
+
 public class DamageHistory {
 
   public static final double EPSILON = 0.00001;
@@ -23,6 +25,7 @@ public class DamageHistory {
 
   public void addDamage(
       MatchPlayer target, double damageAmount, @Nullable ParticipantState attacker) {
+    target.sendMessage(text("Damaged " + damageAmount));
     Deque<DamageEntry> playerHistory = getPlayerHistory(target.getId());
 
     // Update existing if same player causing damage
@@ -38,6 +41,7 @@ public class DamageHistory {
   }
 
   public void removeDamage(MatchPlayer target, double damageAmount) {
+    target.sendMessage(text("Healed " + damageAmount));
     Deque<DamageEntry> playerHistory = getPlayerHistory(target.getId());
     if (playerHistory.isEmpty()) return;
 
