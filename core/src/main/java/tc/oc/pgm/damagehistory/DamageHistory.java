@@ -15,18 +15,21 @@ public class DamageHistory {
 
   public static final double EPSILON = 0.00001;
 
-  private final Map<UUID, Deque<DamageEntry>> allPlayerDamage = new HashMap<>();
+  private final Map<UUID, DamageQueue> allPlayerDamage = new HashMap<>();
 
   public DamageHistory() {}
 
-  public Deque<DamageEntry> getPlayerHistory(UUID uuid) {
-    return allPlayerDamage.computeIfAbsent(uuid, item -> new LinkedList<>());
+  public DamageQueue getPlayerHistory(UUID uuid) {
+    return allPlayerDamage.computeIfAbsent(uuid, item -> new DamageQueue());
   }
 
   public void addDamage(
       MatchPlayer target, double damageAmount, @Nullable ParticipantState attacker) {
     target.sendMessage(text("Damaged " + damageAmount));
-    Deque<DamageEntry> playerHistory = getPlayerHistory(target.getId());
+    DamageQueue playerHistory = getPlayerHistory(target.getId());
+
+    // When they take damage when they have absorbtion
+    playerHistory.reduceAbsorb(damageAmount);
 
     // Update existing if same player causing damage
     if (!playerHistory.isEmpty()) {
@@ -42,7 +45,7 @@ public class DamageHistory {
 
   public void removeDamage(MatchPlayer target, double damageAmount) {
     target.sendMessage(text("Healed " + damageAmount));
-    Deque<DamageEntry> playerHistory = getPlayerHistory(target.getId());
+    DamageQueue playerHistory = getPlayerHistory(target.getId());
     if (playerHistory.isEmpty()) return;
 
     double subtractAmount = damageAmount;
@@ -56,6 +59,18 @@ public class DamageHistory {
         break;
       }
     }
+  }
+
+  public void setAbsortb(MatchPlayer target, double amount) {
+    target.sendMessage(text("Set absorbtion " + amount));
+    DamageQueue playerHistory = getPlayerHistory(target.getId());
+    playerHistory.setAbsorptionHearts(amount);
+  }
+
+  public void removeAbsortb(MatchPlayer target) {
+    target.sendMessage(text("Reset absorbtion"));
+    DamageQueue playerHistory = getPlayerHistory(target.getId());
+    playerHistory.resetAbsorptionHearts();
   }
 
   public boolean shouldMergeParticipants(ParticipantState firstItem, ParticipantState secondItem) {

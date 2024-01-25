@@ -19,6 +19,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityRegainHealthEvent;
 import org.bukkit.event.entity.PotionEffectAddEvent;
+import org.bukkit.event.entity.PotionEffectExpireEvent;
+import org.bukkit.event.entity.PotionEffectRemoveEvent;
 import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.Nullable;
 import tc.oc.pgm.api.PGM;
@@ -99,7 +101,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onDamage(EntityDamageEvent event) {
-    MatchPlayer victim = getVictim(event.getEntity());
+    MatchPlayer victim = getTarget(event.getEntity());
     if (victim == null) return;
 
     DamageInfo damageInfo = tracker().resolveDamage(event);
@@ -115,7 +117,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onDamageMonitor(final EntityRegainHealthEvent event) {
-    MatchPlayer victim = getVictim(event.getEntity());
+    MatchPlayer victim = getTarget(event.getEntity());
     if (victim == null) return;
 
     double maxHealing = victim.getBukkit().getMaxHealth() - victim.getBukkit().getHealth();
@@ -126,20 +128,41 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
   public void onPotionEffectAdd(final PotionEffectAddEvent event) {
     if (!event.getEffect().getType().equals(PotionEffectType.ABSORPTION)) return;
 
-    MatchPlayer victim = getVictim(event.getEntity());
-    if (victim == null) return;
+    MatchPlayer target = getTarget(event.getEntity());
+    if (target == null) return;
 
     double currentHearts = NMSHacks.getAbsorption(event.getEntity());
     double newHearts = (event.getEffect().getAmplifier() + 1) * 4;
 
-    damageHistory.removeDamage(victim, Math.max(0, newHearts - currentHearts));
+    damageHistory.removeDamage(target, Math.max(0, newHearts - currentHearts));
+    damageHistory.setAbsortb(target, newHearts);
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onPotionEffectExpire(final PotionEffectExpireEvent event) {
+    if (!event.getEffect().getType().equals(PotionEffectType.ABSORPTION)) return;
+
+    MatchPlayer target = getTarget(event.getEntity());
+    if (target == null) return;
+
+    damageHistory.removeAbsortb(target);
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+  public void onPotionEffectRemove(final PotionEffectRemoveEvent event) {
+    if (!event.getEffect().getType().equals(PotionEffectType.ABSORPTION)) return;
+
+    MatchPlayer target = getTarget(event.getEntity());
+    if (target == null) return;
+
+    damageHistory.removeAbsortb(target);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPotionEffectAddHealth(final PotionEffectAddEvent event) {
     if (!event.getEffect().getType().equals(PotionEffectType.HEALTH_BOOST)) return;
 
-    MatchPlayer victim = getVictim(event.getEntity());
+    MatchPlayer victim = getTarget(event.getEntity());
     if (victim == null) return;
 
 
@@ -220,7 +243,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
   }
 
   @Nullable
-  MatchPlayer getVictim(Entity entity) {
+  MatchPlayer getTarget(Entity entity) {
     if (entity == null) return null;
     return match.getParticipant(entity);
   }
