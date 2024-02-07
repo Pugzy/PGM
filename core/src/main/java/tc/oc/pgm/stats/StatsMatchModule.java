@@ -381,7 +381,8 @@ public class StatsMatchModule implements MatchModule, Listener {
 
       best.forEach(viewer::sendMessage);
 
-      PlayerStats stats = getPlayerStat(viewer);
+      // Direct fetch to prevent compute if absent call
+      PlayerStats stats = allPlayerStats.get(viewer.getId());
 
       if (event.isShowOwn() && stats != null) {
         Component ksHover =
