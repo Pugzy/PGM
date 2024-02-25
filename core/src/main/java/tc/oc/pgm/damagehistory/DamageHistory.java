@@ -1,15 +1,13 @@
 package tc.oc.pgm.damagehistory;
 
-import java.util.Deque;
+import static net.kyori.adventure.text.Component.text;
+
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
-
-import static net.kyori.adventure.text.Component.text;
 
 public class DamageHistory {
 
@@ -23,8 +21,13 @@ public class DamageHistory {
     return allPlayerDamage.computeIfAbsent(uuid, item -> new DamageQueue());
   }
 
+  public Map<UUID, DamageQueue> getAllPlayerDamage() {
+    return allPlayerDamage;
+  }
+
   public void addDamage(
       MatchPlayer target, double damageAmount, @Nullable ParticipantState attacker) {
+    if (damageAmount == 0) return;
     target.sendMessage(text("Damaged " + damageAmount));
     DamageQueue playerHistory = getPlayerHistory(target.getId());
 
@@ -44,7 +47,8 @@ public class DamageHistory {
   }
 
   public void removeDamage(MatchPlayer target, double damageAmount) {
-    target.sendMessage(text("Healed " + damageAmount));
+    if (damageAmount == 0) return;
+    target.sendMessage(text("Damage removed " + damageAmount));
     DamageQueue playerHistory = getPlayerHistory(target.getId());
     if (playerHistory.isEmpty()) return;
 
@@ -60,6 +64,13 @@ public class DamageHistory {
       }
     }
   }
+
+  public void reduceAbsorb(UUID uuid, double amount) {
+    DamageQueue playerHistory = getPlayerHistory(uuid);
+    playerHistory.reduceAbsorptionHeartsTotal(amount);
+  }
+
+  public void clampDamageValues(MatchPlayer player, double health) {}
 
   public void setAbsortb(MatchPlayer target, double amount) {
     target.sendMessage(text("Set absorbtion " + amount));

@@ -32,6 +32,7 @@ import net.kyori.adventure.text.TextComponent.Builder;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 import org.yaml.snakeyaml.util.UriEncoder;
 import tc.oc.pgm.api.PGM;
@@ -178,6 +179,17 @@ public final class MapCommand {
       Audience audience,
       CommandSender sender,
       @Argument(value = "map", defaultValue = CURRENT) @Greedy MapInfo map) {
+
+    if (sender instanceof Player) {
+
+      Player player = (Player) sender;
+      double maxHealth = player.getMaxHealth();
+      double health = player.getHealth();
+      player.sendMessage(" health: " + health + "max: " + maxHealth);
+
+    }
+
+
     audience.sendMessage(
         TextFormatter.horizontalLineHeading(
             sender,

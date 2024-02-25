@@ -1,16 +1,17 @@
 package tc.oc.pgm.damagehistory;
 
+import static net.kyori.adventure.text.Component.newline;
+import static net.kyori.adventure.text.Component.text;
+
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -27,8 +28,10 @@ import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchModule;
 import tc.oc.pgm.api.match.MatchScope;
+import tc.oc.pgm.api.match.Tickable;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
+import tc.oc.pgm.api.time.Tick;
 import tc.oc.pgm.api.tracker.info.DamageInfo;
 import tc.oc.pgm.events.ListenerScope;
 import tc.oc.pgm.kits.ApplyKitEvent;
@@ -36,13 +39,9 @@ import tc.oc.pgm.kits.HealthKit;
 import tc.oc.pgm.kits.MaxHealthKit;
 import tc.oc.pgm.spawns.events.ParticipantDespawnEvent;
 import tc.oc.pgm.tracker.TrackerMatchModule;
-import tc.oc.pgm.util.nms.NMSHacks;
-
-import static net.kyori.adventure.text.Component.newline;
-import static net.kyori.adventure.text.Component.text;
 
 @ListenerScope(MatchScope.RUNNING)
-public class DamageHistoryMatchModule implements MatchModule, Listener {
+public class DamageHistoryMatchModule implements MatchModule, Listener, Tickable {
 
   private final Match match;
   private final DamageHistory damageHistory;
@@ -56,20 +55,44 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
     return match.needModule(TrackerMatchModule.class);
   }
 
-  public Deque<DamageEntry> getDamageHistory(MatchPlayer player) {
+  public DamageQueue getDamageHistory(MatchPlayer player) {
     return this.damageHistory.getPlayerHistory(player.getId());
   }
 
+  @Override
+  public void tick(Match match, Tick tick) {
+    if (!match.isRunning()) return;
+
+    if (tick.tick % 20 != 0) return;
+
+    damageHistory
+        .getAllPlayerDamage()
+        .forEach(
+            (uuid, damageEntries) -> {
+              if (damageEntries.shouldTick()) {
+                MatchPlayer player = match.getPlayer(uuid);
+                if (player == null) return;
+                if (player.getBukkit().getHealth() == player.getBukkit().getMaxHealth()) {
+                  damageHistory.reduceAbsorb(uuid, 0.25);
+                }
+              }
+            });
+  }
+
   public @Nullable ParticipantState getAssister(MatchPlayer player) {
-    Deque<DamageEntry> damageHistory = getDamageHistory(player);
+    DamageQueue damageHistory = getDamageHistory(player);
     if (damageHistory == null || damageHistory.size() <= 1) return null;
 
     ParticipantState killer = damageHistory.getLast().getDamager();
     if (killer == null) return null;
 
-    double damageReceived = damageHistory.stream().mapToDouble(DamageEntry::getDamage).sum();
+    double damageReceived = player.getBukkit().getMaxHealth() + damageHistory.getAbsorptionHeartsTotal();
+
+    System.out.println("total for player: " + damageReceived);
 
     Collections.reverse((List<?>) damageHistory);
+
+    damageHistory = damageHistory.clamp(damageReceived);
 
     Set<Map.Entry<DamageHistoryKey, Double>> entries =
         damageHistory.stream()
@@ -112,16 +135,20 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDespawn(final ParticipantDespawnEvent event) {
+    DamageQueue damageHistory = getDamageHistory(event.getPlayer());
+    event.getPlayer().sendMessage(text(event.getPlayer().getBukkit().getMaxHealth() + " - " + damageHistory.getAbsorptionHeartsTotal()));
+    broadcast(event.getPlayer(), damageHistory);
     getDamageHistory(event.getPlayer()).clear();
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-  public void onDamageMonitor(final EntityRegainHealthEvent event) {
-    MatchPlayer victim = getTarget(event.getEntity());
-    if (victim == null) return;
+  public void onPlayerHeal(final EntityRegainHealthEvent event) {
+    MatchPlayer target = getTarget(event.getEntity());
+    if (target == null) return;
 
-    double maxHealing = victim.getBukkit().getMaxHealth() - victim.getBukkit().getHealth();
-    damageHistory.removeDamage(victim, Math.min(maxHealing, event.getAmount()));
+    double maxHealing = target.getBukkit().getMaxHealth() - target.getBukkit().getHealth();
+
+    damageHistory.removeDamage(target, Math.min(maxHealing, event.getAmount()));
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -131,10 +158,8 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
     MatchPlayer target = getTarget(event.getEntity());
     if (target == null) return;
 
-    double currentHearts = NMSHacks.getAbsorption(event.getEntity());
     double newHearts = (event.getEffect().getAmplifier() + 1) * 4;
 
-    damageHistory.removeDamage(target, Math.max(0, newHearts - currentHearts));
     damageHistory.setAbsortb(target, newHearts);
   }
 
@@ -161,83 +186,42 @@ public class DamageHistoryMatchModule implements MatchModule, Listener {
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPotionEffectAddHealth(final PotionEffectAddEvent event) {
     if (!event.getEffect().getType().equals(PotionEffectType.HEALTH_BOOST)) return;
-
-    MatchPlayer victim = getTarget(event.getEntity());
-    if (victim == null) return;
-
-
-    double healthChange = (event.getEffect().getAmplifier() + 1) * 4; // Can be negative -8
-
-    // Ignore if health increases
-    if (healthChange >= 0) return;
-
-    double currentHearts = victim.getBukkit().getHealth();
-    double maxHealth = victim.getBukkit().getMaxHealth();
-
-    double finalHealth = maxHealth + healthChange;
-    double change = Math.abs(finalHealth - currentHearts);
-
-    damageHistory.removeDamage(victim, change);
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onHealthChangeKit(ApplyKitEvent event) {
     if (!(event.getKit() instanceof HealthKit)) return;
-
-    HealthKit healthKit = (HealthKit) event.getKit();
-    Player bukkitPlayer = event.getPlayer().getBukkit();
-
-    double newHealth = Math.min(healthKit.getHalfHearts(), bukkitPlayer.getMaxHealth());
-    double currentHealth = bukkitPlayer.getHealth();
-    double healthChange = newHealth - currentHealth;
-
-    // Record damage or heal based on effect of kit
-    if (event.isForce() || currentHealth < newHealth) {
-      if (healthChange == 0) return;
-      if (healthChange >= 0) {
-        damageHistory.removeDamage(event.getPlayer(), healthChange);
-      } else {
-        damageHistory.addDamage(event.getPlayer(), -healthChange, null);
-      }
-    }
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onMaxHealthChangeKit(ApplyKitEvent event) {
     if (!(event.getKit() instanceof MaxHealthKit)) return;
 
-    MaxHealthKit maxHealthKit = (MaxHealthKit) event.getKit();
-    Player bukkitPlayer = event.getPlayer().getBukkit();
+    double health = event.getPlayer().getBukkit().getHealth();
+    double maxHealth = event.getPlayer().getBukkit().getMaxHealth();
 
-    double newMaxHealth = maxHealthKit.getMaxHealth();
-    double currentHealth = bukkitPlayer.getHealth();
-
-    // Player doesn't go down in health due to kit
-    if (newMaxHealth >= currentHealth) return;
-
-    double healthChange = currentHealth - newMaxHealth;
-    Bukkit.broadcastMessage("Health change by " + healthChange + " to " + newMaxHealth);
-    damageHistory.removeDamage(event.getPlayer(), healthChange);
-    broadcast(event.getPlayer(), damageHistory.getPlayerHistory(event.getPlayer().getId()));
+    if (health >= maxHealth) {
+      damageHistory.clampDamageValues(event.getPlayer(), health);
+    }
   }
 
   public void broadcast(MatchPlayer player, Deque<DamageEntry> damageHistory) {
 
     TextComponent.Builder component = text();
 
-    component.append(player.getName())
-            .append(
-                    text(" Damage History:", NamedTextColor.YELLOW, TextDecoration.BOLD)
-                            .append(newline()));
+    component
+        .append(player.getName())
+        .append(
+            text(" Damage History:", NamedTextColor.YELLOW, TextDecoration.BOLD).append(newline()));
 
     damageHistory.forEach(
-            item -> {
-              component
-                      .append(text(" - "))
-                      .append(item.getDamager() != null ? item.getDamager().getName() : text("Unknown"))
-                      .append(text(" \u2764 " + item.getDamage(), NamedTextColor.RED))
-                      .append(newline());
-            });
+        item -> {
+          component
+              .append(text(" - "))
+              .append(item.getDamager() != null ? item.getDamager().getName() : text("Unknown"))
+              .append(text(" \u2764 " + item.getDamage(), NamedTextColor.RED))
+              .append(newline());
+        });
 
     player.getMatch().sendMessage(component.build());
   }
