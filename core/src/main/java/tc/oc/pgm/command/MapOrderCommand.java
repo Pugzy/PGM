@@ -23,7 +23,7 @@ import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.map.MapOrder;
 import tc.oc.pgm.api.match.Match;
-import tc.oc.pgm.listeners.ChatDispatcher;
+import tc.oc.pgm.channels.ChannelManager;
 import tc.oc.pgm.restart.RestartManager;
 import tc.oc.pgm.util.Audience;
 import tc.oc.pgm.util.UsernameFormatUtils;
@@ -69,13 +69,12 @@ public final class MapOrderCommand {
       if (mapOrder.getNextMap() != null) {
         Component mapName = mapOrder.getNextMap().getStyledName(MapNameStyle.COLOR);
         mapOrder.setNextMap(null);
-        ChatDispatcher.broadcastAdminChatMessage(
+        ChannelManager.broadcastAdminMessage(
             translatable(
                 "map.setNext.revert",
                 NamedTextColor.GRAY,
                 UsernameFormatUtils.formatStaffName(sender, match),
-                mapName),
-            match);
+                mapName));
       } else {
         viewer.sendWarning(translatable("map.noNextMap"));
       }
@@ -94,11 +93,10 @@ public final class MapOrderCommand {
 
   public static void sendSetNextMessage(@NotNull MapInfo map, CommandSender sender, Match match) {
     Component mapName = text(map.getName(), NamedTextColor.GOLD);
-    Component successful = translatable(
+    ChannelManager.broadcastAdminMessage( translatable(
         "map.setNext",
         NamedTextColor.GRAY,
         UsernameFormatUtils.formatStaffName(sender, match),
-        mapName);
-    ChatDispatcher.broadcastAdminChatMessage(successful, match);
+        mapName));
   }
 }
