@@ -35,6 +35,7 @@ import tc.oc.pgm.command.AdminCommand;
 import tc.oc.pgm.command.CancelCommand;
 import tc.oc.pgm.command.ClassCommand;
 import tc.oc.pgm.command.CycleCommand;
+import tc.oc.pgm.command.DamageCommand;
 import tc.oc.pgm.command.FinishCommand;
 import tc.oc.pgm.command.FreeForAllCommand;
 import tc.oc.pgm.command.InventoryCommand;
@@ -146,6 +147,7 @@ public class PGMCommandGraph extends CommandGraph<PGM> {
     register(new TeamCommand());
     register(new TimeLimitCommand());
     register(new VotingCommand());
+    register(new DamageCommand());
 
     if (ShowXmlCommand.isEnabled()) register(ShowXmlCommand.getInstance());
     if (PGM.get().getConfiguration().isVanishEnabled()) register(new VanishCommand());

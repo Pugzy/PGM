@@ -48,9 +48,9 @@ public class DamageHistory {
 
   public void removeDamage(MatchPlayer target, double damageAmount) {
     if (damageAmount == 0) return;
-    target.sendMessage(text("Damage removed " + damageAmount));
     DamageQueue playerHistory = getPlayerHistory(target.getId());
     if (playerHistory.isEmpty()) return;
+    target.sendMessage(text("Damage removed " + damageAmount));
 
     double subtractAmount = damageAmount;
     while (!playerHistory.isEmpty() && subtractAmount > 0) {

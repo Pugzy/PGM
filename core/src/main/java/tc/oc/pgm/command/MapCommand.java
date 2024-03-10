@@ -186,9 +186,7 @@ public final class MapCommand {
       double maxHealth = player.getMaxHealth();
       double health = player.getHealth();
       player.sendMessage(" health: " + health + "max: " + maxHealth);
-
     }
-
 
     audience.sendMessage(
         TextFormatter.horizontalLineHeading(

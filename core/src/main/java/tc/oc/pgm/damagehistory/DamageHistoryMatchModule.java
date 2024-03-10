@@ -23,6 +23,7 @@ import org.bukkit.event.entity.PotionEffectAddEvent;
 import org.bukkit.event.entity.PotionEffectExpireEvent;
 import org.bukkit.event.entity.PotionEffectRemoveEvent;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.match.Match;
@@ -73,7 +74,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener, Tickable
                 MatchPlayer player = match.getPlayer(uuid);
                 if (player == null) return;
                 if (player.getBukkit().getHealth() == player.getBukkit().getMaxHealth()) {
-                  damageHistory.reduceAbsorb(uuid, 0.25);
+                  damageHistory.removeDamage(player, 0.25);
                 }
               }
             });
@@ -86,7 +87,8 @@ public class DamageHistoryMatchModule implements MatchModule, Listener, Tickable
     ParticipantState killer = damageHistory.getLast().getDamager();
     if (killer == null) return null;
 
-    double damageReceived = player.getBukkit().getMaxHealth() + damageHistory.getAbsorptionHeartsTotal();
+    double damageReceived =
+        player.getBukkit().getMaxHealth() + damageHistory.getAbsorptionHeartsTotal();
 
     System.out.println("total for player: " + damageReceived);
 
@@ -136,8 +138,14 @@ public class DamageHistoryMatchModule implements MatchModule, Listener, Tickable
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDespawn(final ParticipantDespawnEvent event) {
     DamageQueue damageHistory = getDamageHistory(event.getPlayer());
-    event.getPlayer().sendMessage(text(event.getPlayer().getBukkit().getMaxHealth() + " - " + damageHistory.getAbsorptionHeartsTotal()));
-    broadcast(event.getPlayer(), damageHistory);
+    event
+        .getPlayer()
+        .sendMessage(
+            text(
+                event.getPlayer().getBukkit().getMaxHealth()
+                    + " - "
+                    + damageHistory.getAbsorptionHeartsTotal()));
+    event.getMatch().sendMessage(broadcast(event.getPlayer(), damageHistory));
     getDamageHistory(event.getPlayer()).clear();
   }
 
@@ -205,7 +213,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener, Tickable
     }
   }
 
-  public void broadcast(MatchPlayer player, Deque<DamageEntry> damageHistory) {
+  public @NotNull TextComponent broadcast(MatchPlayer player, Deque<DamageEntry> damageHistory) {
 
     TextComponent.Builder component = text();
 
@@ -223,7 +231,7 @@ public class DamageHistoryMatchModule implements MatchModule, Listener, Tickable
               .append(newline());
         });
 
-    player.getMatch().sendMessage(component.build());
+    return component.build();
   }
 
   @Nullable
