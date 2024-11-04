@@ -130,15 +130,14 @@ public abstract class TouchableGoal<T extends ProximityGoalDefinition> extends P
       boolean firstForPlayer = touchingPlayers.add(toucher);
       boolean firstForPlayerLife = recentTouchingPlayers.add(toucher);
 
-      event =
-          new GoalTouchEvent(
-              this,
-              toucher.getParty(),
-              firstForCompetitor,
-              toucher,
-              firstForPlayer,
-              firstForPlayerLife,
-              getMatch().getTick().instant);
+      event = new GoalTouchEvent(
+          this,
+          toucher.getParty(),
+          firstForCompetitor,
+          toucher,
+          firstForPlayer,
+          firstForPlayerLife,
+          getMatch().getTick().instant);
     }
 
     getMatch().callEvent(event);

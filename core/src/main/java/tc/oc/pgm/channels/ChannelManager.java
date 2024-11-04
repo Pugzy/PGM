@@ -1,6 +1,5 @@
 package tc.oc.pgm.channels;
 
-import static net.kyori.adventure.identity.Identity.identity;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.translatable;
 import static tc.oc.pgm.util.text.TextException.exception;
@@ -8,19 +7,27 @@ import static tc.oc.pgm.util.text.TextException.noPermission;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import net.kyori.adventure.identity.Identity;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerChatTabCompleteEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.incendo.cloud.CommandManager;
+import org.incendo.cloud.context.CommandContext;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.channels.Channel;
 import tc.oc.pgm.api.event.ChannelMessageEvent;
@@ -32,91 +39,129 @@ import tc.oc.pgm.api.setting.SettingValue;
 import tc.oc.pgm.api.setting.Settings;
 import tc.oc.pgm.ffa.Tribute;
 import tc.oc.pgm.util.Players;
-import tc.oc.pgm.util.bukkit.OnlinePlayerMapAdapter;
+import tc.oc.pgm.util.bukkit.OnlinePlayerUUIDMapAdapter;
 import tc.oc.pgm.util.text.TextException;
 
 public class ChannelManager implements Listener {
+
+  private static final Cache<AsyncPlayerChatEvent, Boolean> CHAT_EVENT_CACHE =
+      CacheBuilder.newBuilder()
+          .weakKeys()
+          .expireAfterWrite(15, TimeUnit.SECONDS)
+          .build();
 
   private final GlobalChannel globalChannel;
   private final AdminChannel adminChannel;
   private final TeamChannel teamChannel;
   private final Set<Channel<?>> channels;
   private final Map<Character, Channel<?>> shortcuts;
-  private final OnlinePlayerMapAdapter<Channel<?>> selectedChannel;
+  private final OnlinePlayerUUIDMapAdapter<Channel<?>> selectedChannel;
 
-  private static final Cache<AsyncPlayerChatEvent, Boolean> CHAT_EVENT_CACHE =
-      CacheBuilder.newBuilder().weakKeys().expireAfterWrite(15, TimeUnit.SECONDS).build();
+  private CommandManager<CommandSender> manager;
 
   public ChannelManager() {
-    this.channels = new HashSet<Channel<?>>();
+    this.channels = new HashSet<>();
     this.channels.add(globalChannel = new GlobalChannel());
     this.channels.add(adminChannel = new AdminChannel());
     this.channels.add(teamChannel = new TeamChannel());
-    this.channels.add(new MessageChannel(this));
-    this.channels.addAll(Integration.getRegisteredChannels());
-    Integration.finishRegisteringChannels();
+    this.channels.add(new PrivateMessageChannel());
+    this.channels.addAll(Integration.pollRegisteredChannels());
 
-    this.shortcuts = new HashMap<Character, Channel<?>>();
+    this.shortcuts = new HashMap<>();
     for (Channel<?> channel : channels) {
       if (channel.getShortcut() == null) continue;
 
       this.shortcuts.putIfAbsent(channel.getShortcut(), channel);
     }
 
-    this.selectedChannel = new OnlinePlayerMapAdapter<Channel<?>>(PGM.get());
+    this.selectedChannel = new OnlinePlayerUUIDMapAdapter<>(PGM.get());
+  }
+
+  public void registerCommands(CommandManager<CommandSender> manager) {
+    this.manager = manager;
+
+    for (Channel<?> channel : PGM.get().getChannelManager().getChannels()) {
+      channel.registerCommand(manager);
+    }
   }
 
   public void processChat(MatchPlayer sender, String message) {
     if (message.isEmpty()) return;
 
-    Channel<?> channel = getSelectedChannel(sender);
-    Map<String, Object> arguments = new HashMap<String, Object>();
-    arguments.put("message", message);
+    CommandContext<CommandSender> context = new CommandContext<>(sender.getBukkit(), manager);
+    Channel<?> channel = shortcuts.get(message.charAt(0));
 
-    Channel<?> shortcut = shortcuts.get(message.charAt(0));
-    if (shortcut != null && shortcut.canSendMessage(sender)) {
-      arguments = shortcut.processChatShortcut(sender, message);
-      channel = shortcut;
+    if (channel != null && channel.canSendMessage(sender)) {
+      channel.processChatShortcut(sender, message, context);
     }
 
-    if (arguments.containsKey("message")) process(channel, sender, arguments);
+    if (channel == null) {
+      channel = getSelectedChannel(sender);
+      channel.processChatMessage(sender, message, context);
+    }
+
+    if (context.contains(Channel.MESSAGE_KEY)) process(channel, sender, context);
   }
 
-  public void process(Channel<?> channel, MatchPlayer sender, Map<String, ?> arguments) {
-    process0(calculateChannelRedirect(channel, sender), sender, arguments);
+  public void process(
+      Channel<?> channel, MatchPlayer sender, CommandContext<CommandSender> context) {
+    processChannelMessage(calculateChannelRedirect(channel, sender, context), sender, context);
   }
 
-  private <T> void process0(Channel<T> channel, MatchPlayer sender, Map<String, ?> arguments) {
+  private <T> void processChannelMessage(
+      Channel<T> channel, MatchPlayer sender, CommandContext<CommandSender> context) {
     if (!channel.canSendMessage(sender)) throw noPermission();
     throwMuted(sender);
 
-    T target = channel.getTarget(sender, arguments);
+    T target = channel.getTarget(sender, context);
     Collection<MatchPlayer> viewers = channel.getViewers(target);
 
-    final AsyncPlayerChatEvent asyncEvent =
-        new AsyncPlayerChatEvent(
-            false,
-            sender.getBukkit(),
-            (String) arguments.get("message"),
-            viewers.stream().map(MatchPlayer::getBukkit).collect(Collectors.toSet()));
+    final AsyncPlayerChatEvent asyncEvent = new AsyncPlayerChatEvent(
+        false,
+        sender.getBukkit(),
+        context.get(Channel.MESSAGE_KEY),
+        viewers.stream().map(MatchPlayer::getBukkit).collect(Collectors.toSet()));
+
     CHAT_EVENT_CACHE.put(asyncEvent, true);
     sender.getMatch().callEvent(asyncEvent);
     if (asyncEvent.isCancelled()) return;
 
-    // The actual message is sent in sendMessage(ChannelMessageEvent)
-    final ChannelMessageEvent<T> channelEvent =
-        new ChannelMessageEvent<T>(channel, sender, target, viewers, asyncEvent.getMessage());
-    channel.sendMessage(channelEvent);
-    sender.getMatch().callEvent(channelEvent);
+    final ChannelMessageEvent<T> event =
+        new ChannelMessageEvent<>(channel, sender, target, viewers, asyncEvent.getMessage());
+
+    sender.getMatch().callEvent(event);
+
+    if (event.isCancelled()) {
+      if (event.getSender() != null && event.getCancellationReason() != null) {
+        event.getSender().sendWarning(event.getCancellationReason());
+      }
+      return;
+    }
+
+    Component finalMessage = event
+        .getChannel()
+        .formatMessage(event.getTarget(), event.getSender(), event.getComponent());
+    event.getViewers().forEach(player -> player.sendMessage(finalMessage));
+
+    channel.messageSent(event);
   }
 
-  private Channel<?> calculateChannelRedirect(Channel<?> channel, MatchPlayer sender) {
+  private Channel<?> calculateChannelRedirect(
+      Channel<?> channel, MatchPlayer sender, CommandContext<CommandSender> context) {
     if (Integration.isVanished(sender.getBukkit()) && !(channel instanceof AdminChannel)) {
+      // Allow private messaging with players who can see each other
+      if (channel instanceof PrivateMessageChannel pmc && pmc.canSendVanished(sender, context)) {
+        return channel;
+      }
+
       if (!channel.supportsRedirect()) throw exception("vanish.chat.deny");
+
       return adminChannel;
     }
 
-    if (sender.getMatch().isFinished() || sender.getParty() instanceof Tribute) {
+    // Try to use global chat when a match has ended
+    if (channel.supportsRedirect()
+        && (sender.getMatch().isFinished() || sender.getParty() instanceof Tribute)) {
       if (channel instanceof TeamChannel) return globalChannel;
     }
 
@@ -133,27 +178,11 @@ public class ChannelManager implements Listener {
     throw exception("moderation.mute.message", reason.color(NamedTextColor.AQUA));
   }
 
-  @EventHandler(priority = EventPriority.MONITOR)
-  public <T> void sendMessage(ChannelMessageEvent<T> event) {
-    if (event.isCancelled()) {
-      if (event.getSender() != null && event.getCancellationReason() != null)
-        event.getSender().sendWarning(event.getCancellationReason());
-      return;
-    }
-
-    Component finalMessage =
-        event
-            .getChannel()
-            .formatMessage(event.getTarget(), event.getSender(), text(event.getMessage()));
-    Identity senderId = identity(event.getSender().getId());
-    event.getViewers().forEach(player -> player.sendMessage(senderId, finalMessage));
-  }
-
   @EventHandler
   public void onPlayerTabComplete(PlayerChatTabCompleteEvent event) {
     if (event.getChatMessage().trim().equals(event.getLastToken())) {
       char first = event.getLastToken().charAt(0);
-      if (shortcuts.get(first) != null) {
+      if (shortcuts.containsKey(first)) {
         List<String> suggestions =
             Players.getPlayerNames(event.getPlayer(), event.getLastToken().substring(1));
         suggestions.replaceAll(s -> first + s);
@@ -168,17 +197,18 @@ public class ChannelManager implements Listener {
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
     selectedChannel.put(
-        player.getBukkit(), findChannelBySetting(player.getSettings().getValue(SettingKey.CHAT)));
+        player.getId(), findChannelBySetting(player.getSettings().getValue(SettingKey.CHAT)));
   }
 
   @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
   public void onChat(AsyncPlayerChatEvent event) {
-    if (CHAT_EVENT_CACHE.getIfPresent(event) == null) {
-      event.setCancelled(true);
-    } else {
+    if (CHAT_EVENT_CACHE.getIfPresent(event) != null) {
+      // PGM created chat event, ignore it
       CHAT_EVENT_CACHE.invalidate(event);
       return;
     }
+
+   event.setCancelled(true);
 
     final MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
@@ -193,18 +223,20 @@ public class ChannelManager implements Listener {
   }
 
   private Channel<?> findChannelBySetting(SettingValue setting) {
-    for (Channel<?> channel : channels) if (setting == channel.getSetting()) return channel;
+    for (Channel<?> channel : channels) {
+      if (setting == channel.getSetting()) return channel;
+    }
 
-    return globalChannel;
+    return teamChannel;
   }
 
   public void setChannel(MatchPlayer player, SettingValue value) {
-    selectedChannel.put(player.getBukkit(), findChannelBySetting(value));
+    selectedChannel.put(player.getId(), findChannelBySetting(value));
   }
 
   public void setChannel(MatchPlayer player, Channel<?> channel) {
-    Channel<?> previous = selectedChannel.get(player.getBukkit());
-    selectedChannel.put(player.getBukkit(), channel);
+    Channel<?> previous = selectedChannel.get(player.getId());
+    selectedChannel.put(player.getId(), channel);
 
     if (channel.getSetting() != null) {
       Settings setting = player.getSettings();
@@ -216,21 +248,19 @@ public class ChannelManager implements Listener {
     }
 
     if (previous != channel) {
-      player.sendMessage(
-          translatable(
-              "setting.set",
-              text("chat"),
-              text(previous.getDisplayName(), NamedTextColor.GRAY),
-              text(channel.getDisplayName(), NamedTextColor.GREEN)));
+      player.sendMessage(translatable(
+          "setting.set",
+          text("chat"),
+          text(previous.getDisplayName(), NamedTextColor.GRAY),
+          text(channel.getDisplayName(), NamedTextColor.GREEN)));
     } else {
-      player.sendMessage(
-          translatable(
-              "setting.get", text("chat"), text(previous.getDisplayName(), NamedTextColor.GREEN)));
+      player.sendMessage(translatable(
+          "setting.get", text("chat"), text(previous.getDisplayName(), NamedTextColor.GREEN)));
     }
   }
 
   public Channel<?> getSelectedChannel(MatchPlayer player) {
-    return selectedChannel.getOrDefault(player.getBukkit(), globalChannel);
+    return selectedChannel.getOrDefault(player.getId(), globalChannel);
   }
 
   public Set<Channel<?>> getChannels() {

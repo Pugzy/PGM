@@ -14,7 +14,6 @@ import org.incendo.cloud.suggestion.SuggestionProvider;
 import tc.oc.pgm.action.actions.ExposedAction;
 import tc.oc.pgm.api.Config;
 import tc.oc.pgm.api.PGM;
-import tc.oc.pgm.api.channels.Channel;
 import tc.oc.pgm.api.filter.Filter;
 import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.map.MapLibrary;
@@ -141,8 +140,7 @@ public class PGMCommandGraph extends CommandGraph<PGM> {
         .handler(context -> minecraftHelp.queryCommands(
             context.<String>optional("query").orElse(""), context.sender())));
 
-    for (Channel<?> channel : PGM.get().getChannelManager().getChannels())
-      channel.registerCommand(manager);
+    PGM.get().getChannelManager().registerCommands(manager);
   }
 
   // Injectors

@@ -48,10 +48,9 @@ public final class StartCommand {
 
     match.getCountdown().cancelAll(StartCountdown.class);
     start.forceStartCountdown(duration, null);
-    ChannelManager.broadcastAdminMessage(
-        translatable(
-            "admin.start.announce",
-            player(sender, NameStyle.FANCY),
-            duration(duration, NamedTextColor.AQUA)));
+    ChannelManager.broadcastAdminMessage(translatable(
+        "admin.start.announce",
+        player(sender, NameStyle.FANCY),
+        duration(duration, NamedTextColor.AQUA)));
   }
 }

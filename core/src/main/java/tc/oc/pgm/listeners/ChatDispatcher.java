@@ -30,12 +30,11 @@ public class ChatDispatcher {
     // does this a lot
   }
 
-  public static final TextComponent ADMIN_CHAT_PREFIX =
-      text()
-          .append(text("[", NamedTextColor.WHITE))
-          .append(text("A", NamedTextColor.GOLD))
-          .append(text("] ", NamedTextColor.WHITE))
-          .build();
+  public static final TextComponent ADMIN_CHAT_PREFIX = text()
+      .append(text("[", NamedTextColor.WHITE))
+      .append(text("A", NamedTextColor.GOLD))
+      .append(text("] ", NamedTextColor.WHITE))
+      .build();
 
   private static final Sound DM_SOUND = sound(key("random.orb"), Sound.Source.MASTER, 1f, 1.2f);
 

@@ -92,23 +92,21 @@ public class AntiGriefListener implements Listener {
             entity,
             translatable("moderation.defuse.player", NamedTextColor.RED, owner.getName()));
 
-        ChannelManager.broadcastAdminMessage(
-            translatable(
-                "moderation.defuse.alert.player",
-                NamedTextColor.GRAY,
-                clicker.getName(),
-                owner.getName(),
-                MinecraftComponent.entity(entity.getType()).color(NamedTextColor.DARK_RED)));
+        ChannelManager.broadcastAdminMessage(translatable(
+            "moderation.defuse.alert.player",
+            NamedTextColor.GRAY,
+            clicker.getName(),
+            owner.getName(),
+            MinecraftComponent.entity(entity.getType()).color(NamedTextColor.DARK_RED)));
       } else {
         this.notifyDefuse(
             clicker, entity, translatable("moderation.defuse.world", NamedTextColor.RED));
 
-        ChannelManager.broadcastAdminMessage(
-            translatable(
-                "moderation.defuse.alert.world",
-                NamedTextColor.GRAY,
-                clicker.getName(),
-                MinecraftComponent.entity(entity.getType()).color(NamedTextColor.DARK_RED)));
+        ChannelManager.broadcastAdminMessage(translatable(
+            "moderation.defuse.alert.world",
+            NamedTextColor.GRAY,
+            clicker.getName(),
+            MinecraftComponent.entity(entity.getType()).color(NamedTextColor.DARK_RED)));
       }
     }
   }

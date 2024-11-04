@@ -10,7 +10,6 @@ import java.util.List;
 import org.bukkit.Material;
 import org.jetbrains.annotations.NotNull;
 import tc.oc.pgm.api.PGM;
-import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.modules.PlayerTimeMatchModule;
 import tc.oc.pgm.util.Aliased;
@@ -22,12 +21,7 @@ import tc.oc.pgm.util.material.Materials;
  * @see SettingValue
  */
 public enum SettingKey implements Aliased {
-  CHAT(
-      "chat",
-      Materials.SIGN,
-      CHAT_TEAM,
-      CHAT_GLOBAL,
-      CHAT_ADMIN) {
+  CHAT("chat", Materials.SIGN, CHAT_TEAM, CHAT_GLOBAL, CHAT_ADMIN) {
     @Override
     public void update(MatchPlayer player) {
       PGM.get().getChannelManager().setChannel(player, player.getSettings().getValue(CHAT));

@@ -86,11 +86,10 @@ public final class FreeForAllCommand {
   }
 
   private void sendResizedMessage(Match match, CommandSender sender, String type, int value) {
-    ChannelManager.broadcastAdminMessage(
-        translatable(
-            "match.resize.announce." + type,
-            player(sender, NameStyle.FANCY),
-            translatable("match.info.players", NamedTextColor.YELLOW),
-            text(value, NamedTextColor.AQUA)));
+    ChannelManager.broadcastAdminMessage(translatable(
+        "match.resize.announce." + type,
+        player(sender, NameStyle.FANCY),
+        translatable("match.info.players", NamedTextColor.YELLOW),
+        text(value, NamedTextColor.AQUA)));
   }
 }

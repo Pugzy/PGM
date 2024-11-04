@@ -42,9 +42,9 @@ public interface PGM extends Plugin {
 
   InventoryManager getInventoryManager();
 
-  ChannelManager getChannelManager();
-
   AfkTracker getAfkTracker();
+
+  ChannelManager getChannelManager();
 
   AtomicReference<PGM> GLOBAL = new AtomicReference<>(null);
 

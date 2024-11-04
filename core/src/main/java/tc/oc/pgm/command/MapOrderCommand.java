@@ -69,12 +69,11 @@ public final class MapOrderCommand {
       if (mapOrder.getNextMap() != null) {
         Component mapName = mapOrder.getNextMap().getStyledName(MapNameStyle.COLOR);
         mapOrder.setNextMap(null);
-        ChannelManager.broadcastAdminMessage(
-            translatable(
-                "map.setNext.revert",
-                NamedTextColor.GRAY,
-                UsernameFormatUtils.formatStaffName(sender, match),
-                mapName));
+        ChannelManager.broadcastAdminMessage(translatable(
+            "map.setNext.revert",
+            NamedTextColor.GRAY,
+            UsernameFormatUtils.formatStaffName(sender, match),
+            mapName));
       } else {
         viewer.sendWarning(translatable("map.noNextMap"));
       }
@@ -93,7 +92,7 @@ public final class MapOrderCommand {
 
   public static void sendSetNextMessage(@NotNull MapInfo map, CommandSender sender, Match match) {
     Component mapName = text(map.getName(), NamedTextColor.GOLD);
-    ChannelManager.broadcastAdminMessage( translatable(
+    ChannelManager.broadcastAdminMessage(translatable(
         "map.setNext",
         NamedTextColor.GRAY,
         UsernameFormatUtils.formatStaffName(sender, match),

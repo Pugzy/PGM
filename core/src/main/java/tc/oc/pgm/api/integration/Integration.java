@@ -27,7 +27,7 @@ public final class Integration {
       new AtomicReference<VanishIntegration>(new NoopVanishIntegration());
   private static final AtomicReference<SquadIntegration> SQUAD =
       new AtomicReference<>(new NoopSquadIntegration());
-  private static Set<Channel<?>> CHANNELS = new HashSet<Channel<?>>();
+  private static Set<Channel<?>> CHANNELS = new HashSet<>();
 
   public static void setFriendIntegration(FriendIntegration integration) {
     FRIENDS.set(assertNotNull(integration));
@@ -95,12 +95,10 @@ public final class Integration {
     return isVanished(player) || getNick(player) != null;
   }
 
-  public static Set<Channel<?>> getRegisteredChannels() {
-    return Collections.unmodifiableSet(CHANNELS);
-  }
-
-  public static void finishRegisteringChannels() {
+  public static Set<Channel<?>> pollRegisteredChannels() {
+    Set<Channel<?>> channels = CHANNELS;
     CHANNELS = null;
+    return Collections.unmodifiableSet(channels);
   }
 
   // No-op Implementations

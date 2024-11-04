@@ -83,12 +83,11 @@ public class VotingCommand {
       @Argument("map") @Greedy MapInfo map) {
     VotePoolOptions vote = getVoteOptions(mapOrder);
     if (vote.removeMap(map)) {
-      ChannelManager.broadcastAdminMessage(
-          translatable(
-              "vote.remove",
-              NamedTextColor.GRAY,
-              UsernameFormatUtils.formatStaffName(sender, match),
-              map.getStyledName(MapNameStyle.COLOR)));
+      ChannelManager.broadcastAdminMessage(translatable(
+          "vote.remove",
+          NamedTextColor.GRAY,
+          UsernameFormatUtils.formatStaffName(sender, match),
+          map.getStyledName(MapNameStyle.COLOR)));
     } else {
       viewer.sendWarning(translatable("map.notFound"));
     }
@@ -101,12 +100,11 @@ public class VotingCommand {
     VotePoolOptions vote = getVoteOptions(mapOrder);
     Component voteModeName = translatable(
         vote.toggleMode() ? "vote.mode.replace" : "vote.mode.create", NamedTextColor.LIGHT_PURPLE);
-    ChannelManager.broadcastAdminMessage(
-        translatable(
-            "vote.toggle",
-            NamedTextColor.GRAY,
-            UsernameFormatUtils.formatStaffName(sender, match),
-            voteModeName));
+    ChannelManager.broadcastAdminMessage(translatable(
+        "vote.toggle",
+        NamedTextColor.GRAY,
+        UsernameFormatUtils.formatStaffName(sender, match),
+        voteModeName));
   }
 
   @Command("clear")
