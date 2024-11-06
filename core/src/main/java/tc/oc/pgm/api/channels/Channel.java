@@ -64,6 +64,13 @@ public interface Channel<T> {
     return null;
   }
 
+  /**
+   * Retrieves the format these channel messages should be logged using via the
+   * {@code AsyncPlayerChatEvent}.
+   *
+   * @param target the message target
+   * @return formatted messaged printed to console
+   */
   default String getLoggerFormat(T target) {
     return "<%s>: %s";
   }
