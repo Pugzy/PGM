@@ -16,6 +16,7 @@ import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.event.ChannelMessageEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.setting.SettingValue;
+import tc.oc.pgm.util.Audience;
 import tc.oc.pgm.util.Players;
 
 /**
@@ -61,6 +62,10 @@ public interface Channel<T> {
    */
   default SettingValue getSetting() {
     return null;
+  }
+
+  default String getLoggerFormat(T target) {
+    return "<%s>: %s";
   }
 
   /**
@@ -206,5 +211,6 @@ public interface Channel<T> {
     Collection<MatchPlayer> viewers = getBroadcastViewers(target);
     Component finalMessage = formatMessage(target, null, component);
     viewers.stream().filter(filter).forEach(player -> player.sendMessage(finalMessage));
+    Audience.console().sendMessage(finalMessage);
   }
 }

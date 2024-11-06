@@ -38,6 +38,11 @@ public class TeamChannel implements Channel<Party> {
   }
 
   @Override
+  public String getLoggerFormat(Party target) {
+    return "(" + target.getNameLegacy() + ") %s: %s";
+  }
+
+  @Override
   public boolean supportsRedirect() {
     return true;
   }

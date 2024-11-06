@@ -14,11 +14,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -28,6 +30,7 @@ import org.bukkit.event.player.PlayerChatTabCompleteEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.incendo.cloud.CommandManager;
 import org.incendo.cloud.context.CommandContext;
+import org.incendo.cloud.key.CloudKey;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.channels.Channel;
 import tc.oc.pgm.api.event.ChannelMessageEvent;
@@ -38,11 +41,15 @@ import tc.oc.pgm.api.setting.SettingKey;
 import tc.oc.pgm.api.setting.SettingValue;
 import tc.oc.pgm.api.setting.Settings;
 import tc.oc.pgm.ffa.Tribute;
+import tc.oc.pgm.util.Audience;
 import tc.oc.pgm.util.Players;
 import tc.oc.pgm.util.bukkit.OnlinePlayerUUIDMapAdapter;
 import tc.oc.pgm.util.text.TextException;
 
 public class ChannelManager implements Listener {
+
+  CloudKey<AsyncPlayerChatEvent> ORIGINAL_EVENT_KEY =
+      CloudKey.of("event", AsyncPlayerChatEvent.class);
 
   private static final Cache<AsyncPlayerChatEvent, Boolean> CHAT_EVENT_CACHE =
       CacheBuilder.newBuilder()
@@ -85,14 +92,18 @@ public class ChannelManager implements Listener {
     }
   }
 
-  public void processChat(MatchPlayer sender, String message) {
-    if (message.isEmpty()) return;
+  public boolean processChat(MatchPlayer sender, AsyncPlayerChatEvent event) {
+    final String message = event.getMessage().trim();
+    if (message.isEmpty()) return false;
 
     CommandContext<CommandSender> context = new CommandContext<>(sender.getBukkit(), manager);
+    context.store(ORIGINAL_EVENT_KEY, event);
+
     Channel<?> channel = shortcuts.get(message.charAt(0));
 
     if (channel != null && channel.canSendMessage(sender)) {
       channel.processChatShortcut(sender, message, context);
+      context.optional(Channel.MESSAGE_KEY).ifPresent(event::setMessage);
     }
 
     if (channel == null) {
@@ -100,15 +111,20 @@ public class ChannelManager implements Listener {
       channel.processChatMessage(sender, message, context);
     }
 
-    if (context.contains(Channel.MESSAGE_KEY)) process(channel, sender, context);
+    if (context.contains(Channel.MESSAGE_KEY)) {
+      return process(channel, sender, context);
+    }
+
+    return false;
   }
 
-  public void process(
+  public boolean process(
       Channel<?> channel, MatchPlayer sender, CommandContext<CommandSender> context) {
-    processChannelMessage(calculateChannelRedirect(channel, sender, context), sender, context);
+    return processChannelMessage(
+        calculateChannelRedirect(channel, sender, context), sender, context);
   }
 
-  private <T> void processChannelMessage(
+  private <T> boolean processChannelMessage(
       Channel<T> channel, MatchPlayer sender, CommandContext<CommandSender> context) {
     if (!channel.canSendMessage(sender)) throw noPermission();
     throwMuted(sender);
@@ -124,7 +140,7 @@ public class ChannelManager implements Listener {
 
     CHAT_EVENT_CACHE.put(asyncEvent, true);
     sender.getMatch().callEvent(asyncEvent);
-    if (asyncEvent.isCancelled()) return;
+    if (asyncEvent.isCancelled()) return false;
 
     final ChannelMessageEvent<T> event =
         new ChannelMessageEvent<>(channel, sender, target, viewers, asyncEvent.getMessage());
@@ -135,7 +151,7 @@ public class ChannelManager implements Listener {
       if (event.getSender() != null && event.getCancellationReason() != null) {
         event.getSender().sendWarning(event.getCancellationReason());
       }
-      return;
+      return false;
     }
 
     Component finalMessage = event
@@ -144,6 +160,15 @@ public class ChannelManager implements Listener {
     event.getViewers().forEach(player -> player.sendMessage(finalMessage));
 
     channel.messageSent(event);
+
+    String logFormat = "[CHAT] " + channel.getLoggerFormat(target);
+    context.optional(ORIGINAL_EVENT_KEY).ifPresentOrElse(e -> e.setFormat(logFormat), () -> {
+      String message = String.format(
+          logFormat, sender.getBukkit().getDisplayName(), context.get(Channel.MESSAGE_KEY));
+      Audience.console().sendMessage(text(message));
+    });
+
+    return true;
   }
 
   private Channel<?> calculateChannelRedirect(
@@ -208,17 +233,29 @@ public class ChannelManager implements Listener {
       return;
     }
 
-   event.setCancelled(true);
+    event.getRecipients().clear();
 
     final MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
 
-    final String message = event.getMessage().trim();
-    try {
-      processChat(player, message);
-    } catch (TextException e) {
-      // Allow sub-handlers to throw command exceptions just fine
-      player.sendWarning(e);
+    Runnable completion = () -> {
+      try {
+        boolean sent = processChat(player, event);
+        if (!sent) event.setCancelled(true);
+      } catch (TextException e) {
+        // Allow sub-handlers to throw command exceptions just fine
+        event.setCancelled(true);
+        player.sendWarning(e);
+      }
+    };
+
+    if (Bukkit.isPrimaryThread()) completion.run();
+    else {
+      try {
+        PGM.get().getExecutor().submit(completion).get();
+      } catch (InterruptedException | ExecutionException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 

@@ -58,6 +58,11 @@ public class AdminChannel implements Channel<Void> {
   }
 
   @Override
+  public String getLoggerFormat(Void target) {
+    return "[A] %s: %s";
+  }
+
+  @Override
   public boolean canSendMessage(MatchPlayer sender) {
     return sender.getBukkit().hasPermission(Permissions.ADMINCHAT);
   }

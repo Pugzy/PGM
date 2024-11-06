@@ -69,6 +69,11 @@ public class PrivateMessageChannel implements Channel<MatchPlayer> {
   }
 
   @Override
+  public String getLoggerFormat(MatchPlayer target) {
+    return "(DM) %s -> " + target.getBukkit().getDisplayName() + ": %s";
+  }
+
+  @Override
   public MatchPlayer getTarget(MatchPlayer sender, CommandContext<CommandSender> arguments) {
     MatchPlayer target = arguments.get(TARGET_KEY);
     // Check the user can message the target
