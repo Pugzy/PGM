@@ -27,7 +27,7 @@ import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.match.MatchManager;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
-import tc.oc.pgm.channels.ChannelManager;
+import tc.oc.pgm.channels.ChatManager;
 import tc.oc.pgm.spawns.events.ObserverKitApplyEvent;
 import tc.oc.pgm.tnt.TNTMatchModule;
 import tc.oc.pgm.tracker.Trackers;
@@ -92,7 +92,7 @@ public class AntiGriefListener implements Listener {
             entity,
             translatable("moderation.defuse.player", NamedTextColor.RED, owner.getName()));
 
-        ChannelManager.broadcastAdminMessage(translatable(
+        ChatManager.broadcastAdminMessage(translatable(
             "moderation.defuse.alert.player",
             NamedTextColor.GRAY,
             clicker.getName(),
@@ -102,7 +102,7 @@ public class AntiGriefListener implements Listener {
         this.notifyDefuse(
             clicker, entity, translatable("moderation.defuse.world", NamedTextColor.RED));
 
-        ChannelManager.broadcastAdminMessage(translatable(
+        ChatManager.broadcastAdminMessage(translatable(
             "moderation.defuse.alert.world",
             NamedTextColor.GRAY,
             clicker.getName(),

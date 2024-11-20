@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import tc.oc.pgm.api.map.MapLibrary;
 import tc.oc.pgm.api.map.MapOrder;
 import tc.oc.pgm.api.match.MatchManager;
-import tc.oc.pgm.channels.ChannelManager;
+import tc.oc.pgm.channels.ChatManager;
 import tc.oc.pgm.namedecorations.NameDecorationRegistry;
 import tc.oc.pgm.tablist.MatchTabManager;
 import tc.oc.pgm.util.listener.AfkTracker;
@@ -44,7 +44,7 @@ public interface PGM extends Plugin {
 
   AfkTracker getAfkTracker();
 
-  ChannelManager getChannelManager();
+  ChatManager getChatManager();
 
   AtomicReference<PGM> GLOBAL = new AtomicReference<>(null);
 

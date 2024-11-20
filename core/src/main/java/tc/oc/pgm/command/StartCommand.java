@@ -14,7 +14,7 @@ import org.incendo.cloud.annotations.CommandDescription;
 import org.incendo.cloud.annotations.Permission;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.match.Match;
-import tc.oc.pgm.channels.ChannelManager;
+import tc.oc.pgm.channels.ChatManager;
 import tc.oc.pgm.start.StartCountdown;
 import tc.oc.pgm.start.StartMatchModule;
 import tc.oc.pgm.start.UnreadyReason;
@@ -48,7 +48,7 @@ public final class StartCommand {
 
     match.getCountdown().cancelAll(StartCountdown.class);
     start.forceStartCountdown(duration, null);
-    ChannelManager.broadcastAdminMessage(translatable(
+    ChatManager.broadcastAdminMessage(translatable(
         "admin.start.announce",
         player(sender, NameStyle.FANCY),
         duration(duration, NamedTextColor.AQUA)));

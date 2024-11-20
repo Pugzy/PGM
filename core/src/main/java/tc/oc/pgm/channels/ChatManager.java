@@ -46,7 +46,7 @@ import tc.oc.pgm.util.Players;
 import tc.oc.pgm.util.bukkit.OnlinePlayerUUIDMapAdapter;
 import tc.oc.pgm.util.text.TextException;
 
-public class ChannelManager implements Listener {
+public class ChatManager implements Listener {
 
   CloudKey<AsyncPlayerChatEvent> ORIGINAL_EVENT_KEY =
       CloudKey.of("event", AsyncPlayerChatEvent.class);
@@ -66,7 +66,7 @@ public class ChannelManager implements Listener {
 
   private CommandManager<CommandSender> manager;
 
-  public ChannelManager() {
+  public ChatManager() {
     this.channels = new HashSet<>();
     this.channels.add(globalChannel = new GlobalChannel());
     this.channels.add(adminChannel = new AdminChannel());
@@ -87,7 +87,7 @@ public class ChannelManager implements Listener {
   public void registerCommands(CommandManager<CommandSender> manager) {
     this.manager = manager;
 
-    for (Channel<?> channel : PGM.get().getChannelManager().getChannels()) {
+    for (Channel<?> channel : PGM.get().getChatManager().getChannels()) {
       channel.registerCommand(manager);
     }
   }
@@ -272,8 +272,7 @@ public class ChannelManager implements Listener {
   }
 
   public void setChannel(MatchPlayer player, Channel<?> channel) {
-    Channel<?> previous = selectedChannel.get(player.getId());
-    selectedChannel.put(player.getId(), channel);
+    Channel<?> previous = selectedChannel.put(player.getId(), channel);
 
     if (channel.getSetting() != null) {
       Settings setting = player.getSettings();
@@ -284,7 +283,7 @@ public class ChannelManager implements Listener {
       }
     }
 
-    if (previous != channel) {
+    if (previous != null && previous != channel) {
       player.sendMessage(translatable(
           "setting.set",
           text("chat"),
@@ -292,7 +291,7 @@ public class ChannelManager implements Listener {
           text(channel.getDisplayName(), NamedTextColor.GREEN)));
     } else {
       player.sendMessage(translatable(
-          "setting.get", text("chat"), text(previous.getDisplayName(), NamedTextColor.GREEN)));
+          "setting.get", text("chat"), text(channel.getDisplayName(), NamedTextColor.GREEN)));
     }
   }
 
@@ -304,28 +303,36 @@ public class ChannelManager implements Listener {
     return channels;
   }
 
+  public GlobalChannel getGlobalChannel() {
+    return globalChannel;
+  }
+
   public AdminChannel getAdminChannel() {
     return adminChannel;
   }
 
+  public TeamChannel getTeamChannel() {
+    return teamChannel;
+  }
+
   public static void broadcastMessage(Component message) {
-    PGM.get().getChannelManager().globalChannel.broadcastMessage(message, null);
+    PGM.get().getChatManager().globalChannel.broadcastMessage(message, null);
   }
 
   public static void broadcastMessage(Component message, Predicate<MatchPlayer> filter) {
-    PGM.get().getChannelManager().globalChannel.broadcastMessage(message, null, filter);
+    PGM.get().getChatManager().globalChannel.broadcastMessage(message, null, filter);
   }
 
   public static void broadcastAdminMessage(Component message) {
-    PGM.get().getChannelManager().adminChannel.broadcastMessage(message, null);
+    PGM.get().getChatManager().adminChannel.broadcastMessage(message, null);
   }
 
   public static void broadcastPartyMessage(Component message, Party party) {
-    PGM.get().getChannelManager().teamChannel.broadcastMessage(message, party);
+    PGM.get().getChatManager().teamChannel.broadcastMessage(message, party);
   }
 
   public static void broadcastPartyMessage(
       Component message, Party party, Predicate<MatchPlayer> filter) {
-    PGM.get().getChannelManager().teamChannel.broadcastMessage(message, party, filter);
+    PGM.get().getChatManager().teamChannel.broadcastMessage(message, party, filter);
   }
 }

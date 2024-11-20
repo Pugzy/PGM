@@ -52,7 +52,7 @@ public final class Integration {
   public static void registerChannel(Channel<?> channel) {
     if (CHANNELS == null)
       throw new IllegalStateException(
-          "New channels cannot be registered after ChannelManager has been initialised!");
+          "New channels cannot be registered after ChatManager has been initialised!");
     CHANNELS.add(assertNotNull(channel));
   }
 

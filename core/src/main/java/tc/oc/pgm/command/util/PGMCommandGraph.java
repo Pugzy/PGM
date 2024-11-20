@@ -140,7 +140,7 @@ public class PGMCommandGraph extends CommandGraph<PGM> {
         .handler(context -> minecraftHelp.queryCommands(
             context.<String>optional("query").orElse(""), context.sender())));
 
-    PGM.get().getChannelManager().registerCommands(manager);
+    PGM.get().getChatManager().registerCommands(manager);
   }
 
   // Injectors

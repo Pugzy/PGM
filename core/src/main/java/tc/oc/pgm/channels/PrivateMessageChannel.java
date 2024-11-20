@@ -1,8 +1,5 @@
 package tc.oc.pgm.channels;
 
-import static net.kyori.adventure.identity.Identity.identity;
-import static net.kyori.adventure.key.Key.key;
-import static net.kyori.adventure.sound.Sound.sound;
 import static net.kyori.adventure.text.Component.space;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.translatable;
@@ -15,7 +12,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -36,6 +32,7 @@ import tc.oc.pgm.api.setting.SettingValue;
 import tc.oc.pgm.util.MessageSenderIdentity;
 import tc.oc.pgm.util.Players;
 import tc.oc.pgm.util.bukkit.OnlinePlayerUUIDMapAdapter;
+import tc.oc.pgm.util.bukkit.Sounds;
 import tc.oc.pgm.util.named.NameStyle;
 
 public class PrivateMessageChannel implements Channel<MatchPlayer> {
@@ -45,8 +42,6 @@ public class PrivateMessageChannel implements Channel<MatchPlayer> {
   private static final CloudKey<MatchPlayer> TARGET_KEY = CloudKey.of("target", MatchPlayer.class);
 
   private final OnlinePlayerUUIDMapAdapter<MessageSenderIdentity> selectedPlayer, lastMessagedBy;
-
-  private static final Sound SOUND = sound(key("random.orb"), Sound.Source.MASTER, 1f, 1.2f);
 
   public PrivateMessageChannel() {
     this.selectedPlayer = new OnlinePlayerUUIDMapAdapter<>(PGM.get());
@@ -97,7 +92,7 @@ public class PrivateMessageChannel implements Channel<MatchPlayer> {
     SettingValue value = target.getSettings().getValue(SettingKey.SOUNDS);
     if (value.equals(SettingValue.SOUNDS_ALL)
         || value.equals(SettingValue.SOUNDS_CHAT)
-        || value.equals(SettingValue.SOUNDS_DM)) target.playSound(SOUND);
+        || value.equals(SettingValue.SOUNDS_DM)) target.playSound(Sounds.DIRECT_MESSAGE);
 
     setTarget(lastMessagedBy, sender, target);
     setTarget(lastMessagedBy, target, sender);
@@ -135,9 +130,9 @@ public class PrivateMessageChannel implements Channel<MatchPlayer> {
 
           if (!context.contains(MESSAGE_KEY)) {
             setTarget(selectedPlayer, sender, context.get(TARGET_KEY));
-            PGM.get().getChannelManager().setChannel(sender, this);
+            PGM.get().getChatManager().setChannel(sender, this);
           } else {
-            PGM.get().getChannelManager().process(this, sender, context);
+            PGM.get().getChatManager().process(this, sender, context);
           }
         }));
 
@@ -155,10 +150,10 @@ public class PrivateMessageChannel implements Channel<MatchPlayer> {
 
           if (!context.contains(MESSAGE_KEY)) {
             setTarget(selectedPlayer, sender, target);
-            PGM.get().getChannelManager().setChannel(sender, this);
+            PGM.get().getChatManager().setChannel(sender, this);
           } else {
             context.store(TARGET_KEY, target);
-            PGM.get().getChannelManager().process(this, sender, context);
+            PGM.get().getChatManager().process(this, sender, context);
           }
         }));
   }
@@ -183,11 +178,11 @@ public class PrivateMessageChannel implements Channel<MatchPlayer> {
 
     if (spaceIndex == -1) {
       setTarget(selectedPlayer, sender, target);
-      PGM.get().getChannelManager().setChannel(sender, this);
+      PGM.get().getChatManager().setChannel(sender, this);
       return;
     }
 
-    context.store(MESSAGE_KEY, message.substring(spaceIndex + 1));
+    context.store(MESSAGE_KEY, message.substring(spaceIndex + 1).trim());
     context.store(TARGET_KEY, target);
   }
 

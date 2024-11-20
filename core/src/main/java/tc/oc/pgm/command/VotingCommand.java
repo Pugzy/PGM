@@ -24,7 +24,7 @@ import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.map.MapInfo;
 import tc.oc.pgm.api.map.MapOrder;
 import tc.oc.pgm.api.match.Match;
-import tc.oc.pgm.channels.ChannelManager;
+import tc.oc.pgm.channels.ChatManager;
 import tc.oc.pgm.rotation.MapPoolManager;
 import tc.oc.pgm.rotation.pools.VotingPool;
 import tc.oc.pgm.rotation.vote.MapVotePicker;
@@ -66,7 +66,7 @@ public class VotingCommand {
     }
 
     if (vote.addMap(map)) {
-      ChannelManager.broadcastAdminMessage(addMessage);
+      ChatManager.broadcastAdminMessage(addMessage);
     } else {
       viewer.sendWarning(translatable("vote.limit", NamedTextColor.RED));
     }
@@ -83,7 +83,7 @@ public class VotingCommand {
       @Argument("map") @Greedy MapInfo map) {
     VotePoolOptions vote = getVoteOptions(mapOrder);
     if (vote.removeMap(map)) {
-      ChannelManager.broadcastAdminMessage(translatable(
+      ChatManager.broadcastAdminMessage(translatable(
           "vote.remove",
           NamedTextColor.GRAY,
           UsernameFormatUtils.formatStaffName(sender, match),
@@ -100,7 +100,7 @@ public class VotingCommand {
     VotePoolOptions vote = getVoteOptions(mapOrder);
     Component voteModeName = translatable(
         vote.toggleMode() ? "vote.mode.replace" : "vote.mode.create", NamedTextColor.LIGHT_PURPLE);
-    ChannelManager.broadcastAdminMessage(translatable(
+    ChatManager.broadcastAdminMessage(translatable(
         "vote.toggle",
         NamedTextColor.GRAY,
         UsernameFormatUtils.formatStaffName(sender, match),
@@ -127,7 +127,7 @@ public class VotingCommand {
     if (maps.isEmpty()) {
       viewer.sendWarning(translatable("vote.noMapsFound"));
     } else {
-      ChannelManager.broadcastAdminMessage(clearedMsg);
+      ChatManager.broadcastAdminMessage(clearedMsg);
     }
   }
 

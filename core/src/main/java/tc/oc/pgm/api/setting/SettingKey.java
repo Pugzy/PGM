@@ -24,7 +24,7 @@ public enum SettingKey implements Aliased {
   CHAT("chat", Materials.SIGN, CHAT_TEAM, CHAT_GLOBAL, CHAT_ADMIN) {
     @Override
     public void update(MatchPlayer player) {
-      PGM.get().getChannelManager().setChannel(player, player.getSettings().getValue(CHAT));
+      PGM.get().getChatManager().setChannel(player, player.getSettings().getValue(CHAT));
     }
   }, // Changes the default chat channel
   DEATH(

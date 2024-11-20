@@ -21,7 +21,7 @@ import tc.oc.pgm.api.party.Party;
 import tc.oc.pgm.api.party.event.CompetitorRemoveEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.ParticipantState;
-import tc.oc.pgm.channels.ChannelManager;
+import tc.oc.pgm.channels.ChatManager;
 import tc.oc.pgm.goals.events.GoalCompleteEvent;
 import tc.oc.pgm.goals.events.GoalTouchEvent;
 import tc.oc.pgm.spawns.events.ParticipantDespawnEvent;
@@ -196,10 +196,10 @@ public abstract class TouchableGoal<T extends ProximityGoalDefinition> extends P
 
     if (shouldShowTouched(toucher.getParty())) {
       if (showEnemyTouches())
-        ChannelManager.broadcastMessage(
+        ChatManager.broadcastMessage(
             message, viewer -> toucher == null || !toucher.isPlayer(viewer));
       else
-        ChannelManager.broadcastPartyMessage(
+        ChatManager.broadcastPartyMessage(
             message, toucher.getParty(), viewer -> toucher == null || !toucher.isPlayer(viewer));
     }
 

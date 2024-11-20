@@ -159,9 +159,9 @@ public interface Channel<T> {
               context.inject(MatchPlayer.class).orElseThrow(IllegalStateException::new);
 
           if (context.contains(MESSAGE_KEY)) {
-            PGM.get().getChannelManager().process(this, sender, context);
+            PGM.get().getChatManager().process(this, sender, context);
           } else {
-            PGM.get().getChannelManager().setChannel(sender, this);
+            PGM.get().getChatManager().setChannel(sender, this);
           }
         }));
   }
@@ -190,7 +190,7 @@ public interface Channel<T> {
   default void processChatShortcut(
       MatchPlayer sender, String message, CommandContext<CommandSender> context) {
     if (message.length() == 1) {
-      PGM.get().getChannelManager().setChannel(sender, this);
+      PGM.get().getChatManager().setChannel(sender, this);
       return;
     }
 

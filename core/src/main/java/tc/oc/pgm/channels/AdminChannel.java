@@ -1,7 +1,5 @@
 package tc.oc.pgm.channels;
 
-import static net.kyori.adventure.key.Key.key;
-import static net.kyori.adventure.sound.Sound.sound;
 import static net.kyori.adventure.text.Component.empty;
 import static net.kyori.adventure.text.Component.text;
 
@@ -9,7 +7,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import net.kyori.adventure.sound.Sound;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -23,19 +20,18 @@ import tc.oc.pgm.api.event.ChannelMessageEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.setting.SettingKey;
 import tc.oc.pgm.api.setting.SettingValue;
+import tc.oc.pgm.util.bukkit.Sounds;
 import tc.oc.pgm.util.named.NameStyle;
 
 public class AdminChannel implements Channel<Void> {
 
   private static final List<String> ALIASES = List.of("a");
 
-  private static final TextComponent PREFIX = text()
+  public static final TextComponent PREFIX = text()
       .append(text("[", NamedTextColor.WHITE))
       .append(text("A", NamedTextColor.GOLD))
       .append(text("] ", NamedTextColor.WHITE))
       .build();
-
-  private static final Sound SOUND = sound(key("random.orb"), Sound.Source.MASTER, 1f, 0.7f);
 
   @Override
   public String getDisplayName() {
@@ -88,7 +84,7 @@ public class AdminChannel implements Channel<Void> {
       if (viewer.equals(event.getSender())) continue;
       SettingValue value = viewer.getSettings().getValue(SettingKey.SOUNDS);
       if (value.equals(SettingValue.SOUNDS_ALL) || value.equals(SettingValue.SOUNDS_CHAT))
-        viewer.playSound(SOUND);
+        viewer.playSound(Sounds.ADMIN_CHAT);
     }
   }
 

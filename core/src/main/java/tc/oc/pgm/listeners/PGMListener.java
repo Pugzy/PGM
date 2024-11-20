@@ -47,7 +47,7 @@ import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.api.player.MatchPlayer;
-import tc.oc.pgm.channels.ChannelManager;
+import tc.oc.pgm.channels.ChatManager;
 import tc.oc.pgm.events.MapPoolAdjustEvent;
 import tc.oc.pgm.events.PlayerJoinMatchEvent;
 import tc.oc.pgm.events.PlayerLeavePartyEvent;
@@ -344,7 +344,7 @@ public class PGMListener implements Listener {
         forced = translatable("pool.change.forceTimed", poolName, matchLimit, staffName);
       }
 
-      ChannelManager.broadcastAdminMessage(forced.color(NamedTextColor.GRAY));
+      ChatManager.broadcastAdminMessage(forced.color(NamedTextColor.GRAY));
     }
 
     // Broadcast map pool changes due to size

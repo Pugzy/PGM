@@ -40,7 +40,7 @@ import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.match.MatchManager;
 import tc.oc.pgm.api.module.Module;
 import tc.oc.pgm.api.module.exception.ModuleLoadException;
-import tc.oc.pgm.channels.ChannelManager;
+import tc.oc.pgm.channels.ChatManager;
 import tc.oc.pgm.command.util.PGMCommandGraph;
 import tc.oc.pgm.db.CacheDatastore;
 import tc.oc.pgm.db.SQLDatastore;
@@ -99,7 +99,7 @@ public class PGMPlugin extends JavaPlugin implements PGM, Listener {
   private NameDecorationRegistry nameDecorationRegistry;
   private ScheduledExecutorService executorService;
   private ScheduledExecutorService asyncExecutorService;
-  private ChannelManager channelManager;
+  private ChatManager chatManager;
   private InventoryManager inventoryManager;
   private AfkTracker afkTracker;
 
@@ -243,7 +243,7 @@ public class PGMPlugin extends JavaPlugin implements PGM, Listener {
       asyncExecutorService.scheduleAtFixedRate(new ShouldRestartTask(), 0, 1, TimeUnit.MINUTES);
     }
 
-    channelManager = new ChannelManager();
+    chatManager = new ChatManager();
 
     registerListeners();
     registerCommands();
@@ -352,8 +352,8 @@ public class PGMPlugin extends JavaPlugin implements PGM, Listener {
   }
 
   @Override
-  public ChannelManager getChannelManager() {
-    return channelManager;
+  public ChatManager getChatManager() {
+    return chatManager;
   }
 
   private void registerCommands() {
@@ -392,7 +392,7 @@ public class PGMPlugin extends JavaPlugin implements PGM, Listener {
     registerEvents(new MotdListener());
     registerEvents(new ServerPingDataListener(matchManager, mapOrder, getLogger()));
     registerEvents(new JoinLeaveAnnouncer(matchManager));
-    registerEvents(channelManager);
+    registerEvents(chatManager);
   }
 
   private boolean loadInitialMaps() {

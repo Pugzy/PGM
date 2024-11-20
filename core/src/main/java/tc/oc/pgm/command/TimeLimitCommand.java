@@ -17,7 +17,7 @@ import org.incendo.cloud.annotations.Permission;
 import tc.oc.pgm.api.Permissions;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.party.VictoryCondition;
-import tc.oc.pgm.channels.ChannelManager;
+import tc.oc.pgm.channels.ChatManager;
 import tc.oc.pgm.timelimit.TimeLimit;
 import tc.oc.pgm.timelimit.TimeLimitMatchModule;
 import tc.oc.pgm.util.named.NameStyle;
@@ -48,7 +48,7 @@ public final class TimeLimitCommand {
         true));
     time.start();
 
-    ChannelManager.broadcastAdminMessage(translatable(
+    ChatManager.broadcastAdminMessage(translatable(
         "match.timeLimit.announce.commandOutput",
         player(sender, NameStyle.FANCY),
         clock(duration).color(NamedTextColor.AQUA),
